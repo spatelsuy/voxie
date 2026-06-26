@@ -25,7 +25,10 @@
   box-sizing: border-box;
 }
 
-html,
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -33,8 +36,8 @@ body {
   color: var(--text-main);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
-  height: 100%;
-  overflow: hidden;        /* shell handles scrolling per-tab */
+  min-height: 100%;
+  /* do NOT set overflow:hidden on body — clips tab bar on mobile */
 }
 
 h3,
