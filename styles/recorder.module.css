@@ -58,6 +58,13 @@
   box-shadow: 0 0 0 8px rgba(22, 163, 74, 0.15), 0 4px 16px rgba(22, 163, 74, 0.3);
 }
 
+/* processing state — blue pulsing ring */
+.micProcessing {
+  background: #0284c7;
+  border-color: #bae6fd;
+  box-shadow: 0 0 0 8px rgba(2, 132, 199, 0.15), 0 4px 16px rgba(2, 132, 199, 0.3);
+}
+
 /* status text */
 .status {
   font-size: 13px;

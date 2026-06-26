@@ -5,8 +5,12 @@ import styles from "../styles/recorder.module.css";
 const SILENCE_TIMEOUT_MS = 10 * 1000;
 const SILENCE_THRESHOLD  = 5;
 
+// Smart Auto-A2T thresholds
+const AUTO_A2T_MAX_SECONDS = 120;        // 2 minutes
+const AUTO_A2T_MAX_BYTES   = 2 * 1024 * 1024; // 2 MB
+
 /* ─── Component ───────────────────────────────────── */
-export default function VoiceRecorder({ onRecordingSaved }) {
+export default function VoiceRecorder({ onRecordingSaved, onAutoA2T, autoA2TStatus }) {
   const [recState,   setRecState]   = useState("idle"); // idle | recording | paused
   const [statusText, setStatusText] = useState("Ready");
   const [pauseLabel, setPauseLabel] = useState("Pause");
@@ -213,11 +217,34 @@ export default function VoiceRecorder({ onRecordingSaved }) {
     };
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (audioContextRef.current) audioContextRef.current.close();
-    setStatusText("Saved ✓");
-    if (onRecordingSaved) onRecordingSaved(rec);
+
+    /* ── Smart Auto-A2T decision ──────────────────── */
+    const qualifies =
+      duration <= AUTO_A2T_MAX_SECONDS &&
+      blob.size <= AUTO_A2T_MAX_BYTES;
+
+    if (qualifies && onAutoA2T) {
+      setStatusText("Saved ✓ — processing…");
+      if (onRecordingSaved) await onRecordingSaved(rec);
+      onAutoA2T(rec); // fire-and-forget — parent handles status updates
+    } else {
+      setStatusText(
+        qualifies
+          ? "Saved ✓"
+          : `Saved ✓ — tap A2T in History to process`
+      );
+      if (onRecordingSaved) onRecordingSaved(rec);
+    }
   }
 
   const isActiveRec = recState === "recording" || recState === "paused";
+
+  /* Derive display status — auto-A2T feedback overrides local status when idle */
+  const displayStatus =
+    recState === "idle" && autoA2TStatus === "processing" ? "🤖 Analysing your recording…" :
+    recState === "idle" && autoA2TStatus === "done"       ? "✅ Done — check Today tab"     :
+    recState === "idle" && autoA2TStatus === "error"      ? "⚠️ A2T failed — try manually"  :
+    statusText;
 
   return (
     <div className={styles.wrap}>
@@ -231,12 +258,12 @@ export default function VoiceRecorder({ onRecordingSaved }) {
         <canvas ref={canvasRef} className={styles.canvas} />
 
         {/* Big mic button */}
-        <div className={`${styles.micBtn} ${isActiveRec ? styles.micActive : ""}`}>
-          🎙
+        <div className={`${styles.micBtn} ${isActiveRec ? styles.micActive : ""} ${autoA2TStatus === "processing" ? styles.micProcessing : ""}`}>
+          {autoA2TStatus === "processing" ? "⏳" : "🎙"}
         </div>
 
         {/* Status */}
-        <div className={styles.status}>{statusText}</div>
+        <div className={styles.status}>{displayStatus}</div>
 
         {/* Controls */}
         <div className={styles.controls}>
