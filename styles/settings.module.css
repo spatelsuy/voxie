@@ -1,0 +1,124 @@
+/* ─── Settings ─────────────────────────────────────── */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f8fafc;
+}
+
+/* header */
+.header {
+  padding: 18px 20px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+}
+.title { font-size: 20px; font-weight: 700; color: var(--text-main); }
+
+/* scroll area */
+.scroll { flex: 1; overflow-y: auto; padding: 16px 16px 40px; }
+
+/* group */
+.group        { margin-bottom: 20px; }
+.groupLabel   {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* row */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-bottom: 6px;
+}
+.rowIcon  { font-size: 16px; flex-shrink: 0; }
+.rowLabel { flex: 1; font-size: 13px; color: var(--text-main); }
+.rowVal   {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex: unset;
+  min-height: unset;
+  border-radius: 0;
+}
+.rowValMuted { font-size: 13px; color: var(--text-muted); }
+
+/* toggle */
+.toggle {
+  width: 36px;
+  height: 20px;
+  border-radius: 99px;
+  background: #e2e8f0;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex: unset;
+  min-height: unset;
+  transition: background 0.2s;
+}
+.toggleOn { background: #16a34a; }
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s;
+  display: block;
+}
+.toggleOn .toggleThumb { left: 19px; }
+
+/* stepper */
+.stepper { display: flex; align-items: center; gap: 6px; }
+.stepBtn {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #f1f5f9;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex: unset; min-height: unset; padding: 0; color: var(--text-main);
+}
+.stepBtn:hover { background: #e2e8f0; }
+.stepVal { font-size: 13px; font-weight: 600; color: var(--text-main); min-width: 32px; text-align: center; }
+
+/* name edit */
+.nameEdit { display: flex; gap: 6px; align-items: center; }
+.nameInput {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  width: 90px;
+  outline: none;
+  font-family: inherit;
+}
+.nameInput:focus { border-color: var(--primary); }
+.nameSave {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: unset; min-height: unset;
+}

@@ -1,0 +1,18 @@
+/* ─── App shell ────────────────────────────────────── */
+
+/* Full-viewport column: content fills, tab bar sticks to bottom */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;          /* use dvh so mobile browser chrome is excluded */
+  height: 100vh;           /* fallback for browsers without dvh */
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;        /* each tab manages its own scroll */
+  display: flex;
+  flex-direction: column;
+}

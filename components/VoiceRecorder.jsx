@@ -1,0 +1,256 @@
+import { useRef, useState } from "react";
+import styles from "../styles/recorder.module.css";
+
+/* ─── Constants ───────────────────────────────────── */
+const SILENCE_TIMEOUT_MS = 10 * 1000;
+const SILENCE_THRESHOLD  = 5;
+
+/* ─── Component ───────────────────────────────────── */
+export default function VoiceRecorder({ onRecordingSaved }) {
+  const [recState,   setRecState]   = useState("idle"); // idle | recording | paused
+  const [statusText, setStatusText] = useState("Ready");
+  const [pauseLabel, setPauseLabel] = useState("Pause");
+
+  const mediaRecorderRef    = useRef(null);
+  const streamRef           = useRef(null);
+  const audioChunksRef      = useRef([]);
+  const audioContextRef     = useRef(null);
+  const analyserRef         = useRef(null);
+  const dataArrayRef        = useRef(null);
+  const secondsRef          = useRef(0);
+  const isPausedRef         = useRef(false);
+  const timerIntervalRef    = useRef(null);
+  const startTimeRef        = useRef(null);
+  const uiIntervalRef       = useRef(null);
+  const liveSizeRef         = useRef(0);
+  const silenceRafIdRef     = useRef(null);
+  const silenceStartedAtRef = useRef(null);
+  const isAutoPausedRef     = useRef(false);
+  const canvasRef           = useRef(null);
+
+  /* ── Waveform ──────────────────────────────────── */
+  function setupWaveform(stream) {
+    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    analyserRef.current     = audioContextRef.current.createAnalyser();
+    const src = audioContextRef.current.createMediaStreamSource(stream);
+    src.connect(analyserRef.current);
+    analyserRef.current.fftSize = 256;
+    dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+  }
+
+  function drawWaveform() {
+    const canvas = canvasRef.current;
+    if (!analyserRef.current || !canvas) return;
+    analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+    const c = canvas.getContext("2d");
+    canvas.width  = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    c.fillStyle   = "#f1f5f9";
+    c.fillRect(0, 0, canvas.width, canvas.height);
+    c.strokeStyle = "#334155";
+    c.lineWidth   = 2.5;
+    c.lineCap     = "round";
+    c.beginPath();
+    const sw = canvas.width / dataArrayRef.current.length;
+    let x = 0;
+    for (let i = 0; i < dataArrayRef.current.length; i++) {
+      const y = (dataArrayRef.current[i] / 128.0 * canvas.height) / 2;
+      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+      x += sw;
+    }
+    c.lineTo(canvas.width, canvas.height / 2);
+    c.stroke();
+  }
+
+  /* ── Timer ─────────────────────────────────────── */
+  function startTimer() {
+    secondsRef.current  = 0;
+    isPausedRef.current = false;
+    timerIntervalRef.current = setInterval(() => {
+      if (!isPausedRef.current) secondsRef.current++;
+    }, 1000);
+  }
+  function pauseTimer()  { isPausedRef.current = true;  }
+  function resumeTimer() { isPausedRef.current = false; }
+  function stopTimer()   { clearInterval(timerIntervalRef.current); timerIntervalRef.current = null; }
+
+  function formatDur(s) {
+    return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  }
+
+  /* ── Live UI update ────────────────────────────── */
+  function updateUI() {
+    const mr = mediaRecorderRef.current;
+    if (!mr) return;
+    if (mr.state === "recording") {
+      setStatusText(`🔴 ${formatDur(secondsRef.current)}`);
+    } else if (mr.state === "paused") {
+      setStatusText(isAutoPausedRef.current
+        ? `⏸ ${formatDur(secondsRef.current)} — speak to resume`
+        : `⏸ ${formatDur(secondsRef.current)}`);
+    }
+    drawWaveform();
+  }
+
+  /* ── Silence detection ─────────────────────────── */
+  function startSilenceDetection() {
+    silenceStartedAtRef.current = null;
+    isAutoPausedRef.current     = false;
+    function tick() {
+      silenceRafIdRef.current = requestAnimationFrame(tick);
+      if (!analyserRef.current || !mediaRecorderRef.current) return;
+      analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+      let sq = 0;
+      for (let i = 0; i < dataArrayRef.current.length; i++) {
+        const v = dataArrayRef.current[i] - 128; sq += v * v;
+      }
+      const isSilent = Math.sqrt(sq / dataArrayRef.current.length) < SILENCE_THRESHOLD;
+      const state    = mediaRecorderRef.current.state;
+      if (state === "recording") {
+        if (isSilent) {
+          if (!silenceStartedAtRef.current) silenceStartedAtRef.current = Date.now();
+          if (Date.now() - silenceStartedAtRef.current >= SILENCE_TIMEOUT_MS) {
+            mediaRecorderRef.current.pause();
+            pauseTimer();
+            setPauseLabel("Resume");
+            setRecState("paused");
+            isAutoPausedRef.current     = true;
+            silenceStartedAtRef.current = null;
+          }
+        } else { silenceStartedAtRef.current = null; }
+      } else if (state === "paused" && isAutoPausedRef.current) {
+        if (!isSilent) {
+          mediaRecorderRef.current.resume();
+          resumeTimer();
+          setPauseLabel("Pause");
+          setRecState("recording");
+          isAutoPausedRef.current     = false;
+          silenceStartedAtRef.current = null;
+        }
+      }
+    }
+    silenceRafIdRef.current = requestAnimationFrame(tick);
+  }
+
+  function stopSilenceDetection() {
+    if (silenceRafIdRef.current) { cancelAnimationFrame(silenceRafIdRef.current); silenceRafIdRef.current = null; }
+    silenceStartedAtRef.current = null;
+    isAutoPausedRef.current     = false;
+  }
+
+  /* ── MediaRecorder ─────────────────────────────── */
+  function createRecorder(stream) {
+    const recorder = new MediaRecorder(stream, {
+      mimeType: "audio/webm; codecs=opus", audioBitsPerSecond: 24000,
+    });
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) { audioChunksRef.current.push(e.data); liveSizeRef.current += e.data.size; }
+    };
+    recorder.onstop = saveRecording;
+    return recorder;
+  }
+
+  /* ── Start ─────────────────────────────────────── */
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
+      });
+      streamRef.current      = stream;
+      audioChunksRef.current = [];
+      liveSizeRef.current    = 0;
+      startTimeRef.current   = Date.now();
+      setupWaveform(stream);
+      mediaRecorderRef.current = createRecorder(stream);
+      mediaRecorderRef.current.start();
+      startTimer();
+      startSilenceDetection();
+      uiIntervalRef.current = setInterval(updateUI, 300);
+      setRecState("recording");
+      setPauseLabel("Pause");
+      setStatusText("🔴 00:00");
+    } catch (err) {
+      setStatusText("Microphone access denied");
+      console.error(err);
+    }
+  }
+
+  /* ── Pause / Resume ────────────────────────────── */
+  function togglePause() {
+    const mr = mediaRecorderRef.current;
+    if (!mr) return;
+    if (mr.state === "recording") {
+      mr.pause(); pauseTimer(); setPauseLabel("Resume"); setRecState("paused");
+    } else if (mr.state === "paused") {
+      mr.resume(); resumeTimer(); setPauseLabel("Pause"); setRecState("recording");
+      isAutoPausedRef.current = false; silenceStartedAtRef.current = null;
+    }
+  }
+
+  /* ── Stop ──────────────────────────────────────── */
+  function stopRecording() {
+    stopSilenceDetection();
+    mediaRecorderRef.current.stop();
+    stopTimer();
+    clearInterval(uiIntervalRef.current);
+    setRecState("idle");
+    setPauseLabel("Pause");
+    setStatusText("Saving…");
+  }
+
+  /* ── Save ──────────────────────────────────────── */
+  async function saveRecording() {
+    const blob     = new Blob(audioChunksRef.current, { type: "audio/webm" });
+    const url      = URL.createObjectURL(blob);
+    const duration = secondsRef.current;
+    const rec = {
+      name: "Recording " + new Date(startTimeRef.current).toLocaleString("en-US", {
+        month: "short", day: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
+      }),
+      id: Date.now(), blob, url,
+      size: blob.size, duration, createdAt: new Date(),
+    };
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    if (audioContextRef.current) audioContextRef.current.close();
+    setStatusText("Saved ✓");
+    if (onRecordingSaved) onRecordingSaved(rec);
+  }
+
+  const isActiveRec = recState === "recording" || recState === "paused";
+
+  return (
+    <div className={styles.wrap}>
+      <div className={styles.header}>
+        <div className={styles.title}>Record</div>
+        <div className={styles.sub}>Speak your tasks, events and reminders</div>
+      </div>
+
+      <div className={styles.body}>
+        {/* Waveform */}
+        <canvas ref={canvasRef} className={styles.canvas} />
+
+        {/* Big mic button */}
+        <div className={`${styles.micBtn} ${isActiveRec ? styles.micActive : ""}`}>
+          🎙
+        </div>
+
+        {/* Status */}
+        <div className={styles.status}>{statusText}</div>
+
+        {/* Controls */}
+        <div className={styles.controls}>
+          <button className={styles.btnStart} onClick={startRecording} disabled={isActiveRec}>
+            <span>Start</span>
+          </button>
+          <button className={styles.btnPause} onClick={togglePause} disabled={!isActiveRec}>
+            <span>{pauseLabel}</span>
+          </button>
+          <button className={styles.btnStop} onClick={stopRecording} disabled={!isActiveRec}>
+            <span>Stop</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,292 @@
+/* ─────────────────────────────────────────────────
+   main.module.css  —  class-scoped component styles
+   Used by VoiceRecorder.jsx and pages/index.js
+───────────────────────────────────────────────── */
+
+/* ─── Page wrapper ───────────────────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  min-height: 100vh;
+}
+
+.appWrapper {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 16px;
+}
+
+/* ─── Cards ──────────────────────────────────────── */
+.container,
+.historyContainer {
+  width: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* ─── Status ─────────────────────────────────────── */
+.status {
+  text-align: center;
+  margin: 16px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ─── Canvas ─────────────────────────────────────── */
+.waveCanvas {
+  width: 100%;
+  height: 100px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+/* ─── Controls ───────────────────────────────────── */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* ─── Control Buttons ────────────────────────────── */
+.startBtn {
+  background: var(--success);
+  color: white;
+}
+.startBtn:hover,
+.startBtn:active {
+  background: var(--success-hover);
+}
+
+.pauseBtn {
+  background: var(--warning);
+  color: white;
+}
+.pauseBtn:hover,
+.pauseBtn:active {
+  background: var(--warning-hover);
+}
+
+.stopBtn {
+  background: var(--danger);
+  color: white;
+}
+.stopBtn:hover,
+.stopBtn:active {
+  background: var(--danger-hover);
+}
+
+/* ─── A2T Button ─────────────────────────────────── */
+.a2tBtn {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.a2tBtn:hover,
+.a2tBtn:active {
+  background: var(--primary-hover);
+}
+
+/* ─── History ────────────────────────────────────── */
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.emptyHistory {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+.card {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: var(--text-main);
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 8px;
+}
+
+.cardActions button {
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.btnDownload {
+  background: var(--primary);
+  color: white;
+}
+.btnDownload:hover,
+.btnDownload:active {
+  background: var(--primary-hover);
+}
+
+.btnA2t {
+  background: var(--primary);
+  color: white;
+}
+.btnA2t:hover,
+.btnA2t:active {
+  background: var(--primary-hover);
+}
+
+.btnDelete {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: var(--danger);
+}
+.btnDelete:hover,
+.btnDelete:active {
+  background: #fee2e2;
+  border-color: var(--danger);
+}
+
+/* ─── Inline A2T result panel inside a history card ─ */
+.a2tPanel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ─── DB Warning Banner ──────────────────────────── */
+.dbWarning {
+  margin: 10px 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dbWarningNormal {
+  border: 1px solid #e5e7eb;
+  background: #f7f8fa;
+  color: #57606a;
+}
+
+.dbWarningWarn {
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.dbWarningCritical {
+  border: 1px solid #ef4444;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+/* ─── Response container ─────────────────────────── */
+.responseArea {
+  width: 90vw;
+  max-width: 900px;
+  margin-top: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* ─── Mobile ─────────────────────────────────────── */
+@media (max-width: 480px) {
+  .page {
+    padding: 12px 0;
+  }
+
+  .appWrapper {
+    gap: 16px;
+    padding: 0 12px;
+  }
+
+  .container,
+  .historyContainer {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .controls {
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .controls button {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+    min-height: 56px;
+    padding: 0;
+    border-radius: 50%;
+    position: relative;
+  }
+
+  .controls button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cardActions {
+    flex-direction: column;
+  }
+
+  .cardActions button,
+  .a2tBtn {
+    width: 100%;
+  }
+
+  .responseArea {
+    width: 90vw;
+    padding: 16px;
+    border-radius: 14px;
+  }
+}
