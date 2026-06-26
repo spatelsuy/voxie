@@ -12,8 +12,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("today");
 
   const {
-    recordings, a2tResults, dbWarning,
-    addRecording, deleteRecording, saveA2TResult,
+    recordings, a2tResults, items, dbWarning,
+    addRecording, deleteRecording, saveA2TResult, deleteItem,
   } = useOrganizerDB();
 
   /* When a recording is saved, persist it then jump to History */
@@ -37,8 +37,9 @@ export default function Home() {
         <div className={pageStyles.content}>
           {activeTab === "today" && (
             <Dashboard
-              a2tResults={a2tResults}
+              items={items}
               onRecordPress={() => setActiveTab("record")}
+              onDeleteItem={deleteItem}
             />
           )}
           {activeTab === "record" && (
@@ -48,6 +49,7 @@ export default function Home() {
             <HistoryList
               recordings={recordings}
               a2tResults={a2tResults}
+              items={items}
               dbWarning={dbWarning}
               onDelete={deleteRecording}
               onSaveA2T={saveA2TResult}

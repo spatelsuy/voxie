@@ -17,13 +17,61 @@ function formatDuration(sec) {
 
 const API_URL = "https://decode-cri.vercel.app/a2t/transcribe";
 
+/* ─── Confirmation dialog ─────────────────────────── */
+function ConfirmDialog({ recording, itemCount, onYes, onNo }) {
+  return (
+    <div className={styles.overlay}>
+      <div className={styles.dialog}>
+        <div className={styles.dialogTitle}>Delete Recording?</div>
+        <div className={styles.dialogBody}>
+          <p>
+            <strong>{recording.name}</strong> will be permanently deleted.
+          </p>
+          {itemCount > 0 && (
+            <p>
+              This recording has <strong>{itemCount} organizer item{itemCount > 1 ? "s" : ""}</strong>{" "}
+              (tasks, events, reminders) saved in your Organizer.
+            </p>
+          )}
+        </div>
+        {itemCount > 0 ? (
+          <>
+            <div className={styles.dialogHint}>
+              Also delete the {itemCount} item{itemCount > 1 ? "s" : ""} from your Organizer?
+            </div>
+            <div className={styles.dialogActions}>
+              <button className={styles.dialogBtnSecondary} onClick={onNo}>
+                Keep items
+              </button>
+              <button className={styles.dialogBtnDanger} onClick={onYes}>
+                Delete everything
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className={styles.dialogActions}>
+            <button className={styles.dialogBtnSecondary} onClick={onNo}>
+              Cancel
+            </button>
+            <button className={styles.dialogBtnDanger} onClick={onYes}>
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Component ───────────────────────────────────── */
 export default function HistoryList({
-  recordings, a2tResults, dbWarning,
+  recordings, a2tResults, items, dbWarning,
   onDelete, onSaveA2T,
 }) {
   const [expandedA2T, setExpandedA2T] = useState({});
   const [a2tLoading,  setA2tLoading]  = useState({});
+  // confirm dialog state: null | { recording, itemCount }
+  const [confirmFor,  setConfirmFor]  = useState(null);
 
   /* Transcribe a single recording */
   async function transcribeRec(rec) {
@@ -35,7 +83,8 @@ export default function HistoryList({
       const res = await fetch(API_URL, { method: "POST", body: formData });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
-      await onSaveA2T(rec.id, data);
+      // Pass recording date so items can be grouped by date in Dashboard
+      await onSaveA2T(rec.id, data, rec.createdAt.toDateString());
       setExpandedA2T((p) => ({ ...p, [rec.id]: true }));
     } catch (err) {
       alert(err.message);
@@ -56,6 +105,26 @@ export default function HistoryList({
     a.click();
   }
 
+  /* Tap Delete → show confirmation dialog */
+  function handleDeleteClick(rec) {
+    const itemCount = items.filter((i) => i.sourceRecordingId === rec.id).length;
+    setConfirmFor({ recording: rec, itemCount });
+  }
+
+  /* User confirmed — delete recording, optionally also items */
+  function handleConfirmYes() {
+    if (!confirmFor) return;
+    onDelete(confirmFor.recording.id, true); // true = also delete items
+    setConfirmFor(null);
+  }
+
+  /* User chose "Keep items" — delete only recording + raw JSON */
+  function handleConfirmNo() {
+    if (!confirmFor) return;
+    onDelete(confirmFor.recording.id, false); // false = keep items
+    setConfirmFor(null);
+  }
+
   /* DB warning class */
   const warnClass =
     dbWarning?.level === "critical" ? styles.warnCritical :
@@ -64,6 +133,16 @@ export default function HistoryList({
 
   return (
     <div className={styles.wrap}>
+      {/* Confirmation dialog — rendered above everything */}
+      {confirmFor && (
+        <ConfirmDialog
+          recording={confirmFor.recording}
+          itemCount={confirmFor.itemCount}
+          onYes={handleConfirmYes}
+          onNo={handleConfirmNo}
+        />
+      )}
+
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.title}>History</div>
@@ -122,7 +201,7 @@ export default function HistoryList({
                   >
                     {isLoading ? "…" : hasResult ? (isExpanded ? "Hide" : "View A2T") : "A2T"}
                   </button>
-                  <button className={styles.btnDelete} onClick={() => onDelete(r.id)}>
+                  <button className={styles.btnDelete} onClick={() => handleDeleteClick(r)}>
                     Delete
                   </button>
                 </div>

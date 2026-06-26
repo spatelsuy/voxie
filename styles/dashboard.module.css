@@ -61,6 +61,19 @@
 }
 .sec:first-of-type { margin-top: 0; }
 
+/* date group */
+.dateGroup { margin-bottom: 8px; }
+.dateLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 5px 10px;
+  margin: 16px 0 8px;
+  display: inline-block;
+}
+
 /* item row */
 .row {
   display: flex;
@@ -83,6 +96,22 @@
   border-radius: 99px;
   white-space: nowrap;
 }
+
+/* per-item delete button */
+.rowDelete {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex: unset;
+  min-height: unset;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.rowDelete:hover { color: var(--danger); }
 
 /* priority dots */
 .dot      { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }

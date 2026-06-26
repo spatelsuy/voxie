@@ -7,15 +7,16 @@ function todayStr() {
   });
 }
 
-function isToday(dateStr) {
-  if (!dateStr) return false;
+function dateLabel(dateStr) {
+  if (!dateStr) return "";
   const d   = new Date(dateStr);
   const now = new Date();
-  return (
+  const isToday =
     d.getFullYear() === now.getFullYear() &&
     d.getMonth()    === now.getMonth()    &&
-    d.getDate()     === now.getDate()
-  );
+    d.getDate()     === now.getDate();
+  if (isToday) return "Today";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function priorityDotClass(p) {
@@ -24,76 +25,65 @@ function priorityDotClass(p) {
   return styles.dotLow;
 }
 
-/* ─── Aggregate all A2T data ──────────────────────── */
-function aggregate(a2tResults) {
-  const tasks     = [];
-  const events    = [];
-  const reminders = [];
+const TYPE_ICON = { task: null, event: "📅", reminder: "🔔", note: "📝" };
 
-  Object.values(a2tResults).forEach((data) => {
-    const a = data?.analysis;
-    if (!a) return;
-    (a.tasks     || []).forEach((i) => tasks.push(i));
-    (a.events    || []).forEach((i) => events.push(i));
-    (a.reminders || []).forEach((i) => reminders.push(i));
+/* ─── Group items by date, then by type ───────────── */
+function groupItems(items) {
+  // Sort newest date first
+  const sorted = [...items].sort(
+    (a, b) => new Date(b.recordingDate) - new Date(a.recordingDate)
+  );
+
+  const dateMap = {}; // { dateStr: { tasks, events, reminders, notes } }
+  sorted.forEach((item) => {
+    const key = item.recordingDate || "unknown";
+    if (!dateMap[key]) dateMap[key] = { tasks: [], events: [], reminders: [], notes: [] };
+    dateMap[key][item.type + "s"].push(item);
   });
 
-  // Sort events/reminders by time if available
-  const byTime = (a, b) => (a.time || "").localeCompare(b.time || "");
-  events.sort(byTime);
-  reminders.sort(byTime);
-
-  // Sort tasks: high → medium → low
+  // Sort within each date: events/reminders by time, tasks by priority
   const PRIO = { high: 0, medium: 1, low: 2 };
-  tasks.sort((a, b) => (PRIO[a.priority] ?? 2) - (PRIO[b.priority] ?? 2));
+  Object.values(dateMap).forEach((grp) => {
+    grp.events.sort((a, b)    => (a.time || "").localeCompare(b.time || ""));
+    grp.reminders.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+    grp.tasks.sort((a, b)     => (PRIO[a.priority] ?? 2) - (PRIO[b.priority] ?? 2));
+  });
 
-  return { tasks, events, reminders };
+  return dateMap;
 }
 
-/* ─── Sub-components ──────────────────────────────── */
-function Chip({ num, label, cls }) {
-  return (
-    <div className={`${styles.chip} ${cls}`}>
-      <div className={styles.chipNum}>{num}</div>
-      <div className={styles.chipLbl}>{label}</div>
-    </div>
-  );
-}
-
-function EventRow({ item }) {
+/* ─── Single item row ─────────────────────────────── */
+function ItemRow({ item, onDelete }) {
+  const icon = TYPE_ICON[item.type];
   return (
     <div className={styles.row}>
-      <span className={styles.rowIcon}>📅</span>
+      {icon
+        ? <span className={styles.rowIcon}>{icon}</span>
+        : <div className={`${styles.dot} ${priorityDotClass(item.priority)}`} />
+      }
       <span className={styles.rowText}>{item.title}</span>
       {item.time && <span className={styles.rowTime}>{item.time}</span>}
-    </div>
-  );
-}
-
-function TaskRow({ item }) {
-  return (
-    <div className={styles.row}>
-      <div className={`${styles.dot} ${priorityDotClass(item.priority)}`} />
-      <span className={styles.rowText}>{item.title}</span>
-      {item.context && <span className={styles.rowTag}>{item.context}</span>}
-    </div>
-  );
-}
-
-function ReminderRow({ item }) {
-  return (
-    <div className={styles.row}>
-      <span className={styles.rowIcon}>🔔</span>
-      <span className={styles.rowText}>{item.title}</span>
-      {item.time && <span className={styles.rowTime}>{item.time}</span>}
+      <button
+        className={styles.rowDelete}
+        onClick={() => onDelete(item.id)}
+        aria-label="Delete item"
+        title="Delete"
+      >
+        ✕
+      </button>
     </div>
   );
 }
 
 /* ─── Main component ──────────────────────────────── */
-export default function Dashboard({ a2tResults, onRecordPress }) {
-  const { tasks, events, reminders } = aggregate(a2tResults);
-  const isEmpty = tasks.length + events.length + reminders.length === 0;
+export default function Dashboard({ items, onRecordPress, onDeleteItem }) {
+  const grouped  = groupItems(items);
+  const dates    = Object.keys(grouped);
+  const total    = items.length;
+  const taskCnt  = items.filter((i) => i.type === "task").length;
+  const eventCnt = items.filter((i) => i.type === "event").length;
+  const remCnt   = items.filter((i) => i.type === "reminder").length;
+  const isEmpty  = total === 0;
 
   return (
     <div className={styles.wrap}>
@@ -108,9 +98,18 @@ export default function Dashboard({ a2tResults, onRecordPress }) {
 
         {/* Summary chips */}
         <div className={styles.chips}>
-          <Chip num={tasks.length}     label="Tasks"     cls={styles.chipTask} />
-          <Chip num={events.length}    label="Events"    cls={styles.chipEvent} />
-          <Chip num={reminders.length} label="Reminders" cls={styles.chipReminder} />
+          <div className={`${styles.chip} ${styles.chipTask}`}>
+            <div className={styles.chipNum}>{taskCnt}</div>
+            <div className={styles.chipLbl}>Tasks</div>
+          </div>
+          <div className={`${styles.chip} ${styles.chipEvent}`}>
+            <div className={styles.chipNum}>{eventCnt}</div>
+            <div className={styles.chipLbl}>Events</div>
+          </div>
+          <div className={`${styles.chip} ${styles.chipReminder}`}>
+            <div className={styles.chipNum}>{remCnt}</div>
+            <div className={styles.chipLbl}>Reminders</div>
+          </div>
         </div>
 
         {isEmpty ? (
@@ -125,28 +124,55 @@ export default function Dashboard({ a2tResults, onRecordPress }) {
             </button>
           </div>
         ) : (
-          <>
-            {events.length > 0 && (
-              <>
-                <div className={styles.sec}>Events</div>
-                {events.map((item, i) => <EventRow key={i} item={item} />)}
-              </>
-            )}
+          dates.map((dateKey) => {
+            const grp = grouped[dateKey];
+            const allInDate = [
+              ...grp.events,
+              ...grp.tasks,
+              ...grp.reminders,
+              ...grp.notes,
+            ];
+            if (allInDate.length === 0) return null;
+            return (
+              <div key={dateKey} className={styles.dateGroup}>
+                {/* Date separator */}
+                <div className={styles.dateLabel}>{dateLabel(dateKey)}</div>
 
-            {tasks.length > 0 && (
-              <>
-                <div className={styles.sec}>Tasks</div>
-                {tasks.map((item, i) => <TaskRow key={i} item={item} />)}
-              </>
-            )}
-
-            {reminders.length > 0 && (
-              <>
-                <div className={styles.sec}>Reminders</div>
-                {reminders.map((item, i) => <ReminderRow key={i} item={item} />)}
-              </>
-            )}
-          </>
+                {grp.events.length > 0 && (
+                  <>
+                    <div className={styles.sec}>Events</div>
+                    {grp.events.map((item) => (
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                    ))}
+                  </>
+                )}
+                {grp.tasks.length > 0 && (
+                  <>
+                    <div className={styles.sec}>Tasks</div>
+                    {grp.tasks.map((item) => (
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                    ))}
+                  </>
+                )}
+                {grp.reminders.length > 0 && (
+                  <>
+                    <div className={styles.sec}>Reminders</div>
+                    {grp.reminders.map((item) => (
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                    ))}
+                  </>
+                )}
+                {grp.notes.length > 0 && (
+                  <>
+                    <div className={styles.sec}>Notes</div>
+                    {grp.notes.map((item) => (
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                    ))}
+                  </>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 

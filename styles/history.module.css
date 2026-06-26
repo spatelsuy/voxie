@@ -5,6 +5,7 @@
   flex-direction: column;
   height: 100%;
   background: #f8fafc;
+  position: relative;  /* anchors the confirmation dialog overlay */
 }
 
 /* header */
@@ -131,3 +132,81 @@
   padding-top: 14px;
   border-top: 1px solid var(--border);
 }
+
+/* ─── Confirmation dialog overlay ──────────────────── */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.dialog {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.dialogTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.dialogBody p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.dialogHint {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 16px;
+}
+
+.dialogActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dialogBtnSecondary {
+  flex: 1;
+  background: #f1f5f9;
+  color: var(--text-main);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: unset;
+  transition: background 0.2s;
+}
+.dialogBtnSecondary:hover { background: #e2e8f0; }
+
+.dialogBtnDanger {
+  flex: 1;
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: unset;
+  transition: background 0.2s;
+}
+.dialogBtnDanger:hover { background: var(--danger-hover); }
