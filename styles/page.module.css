@@ -18,3 +18,10 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+@media (min-width: 1024px) {
+  .shell {
+    width: 60%;
+    margin: 0 20%;
+  }
+}
