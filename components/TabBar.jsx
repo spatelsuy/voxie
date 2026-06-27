@@ -1,7 +1,7 @@
 import styles from "../styles/tabbar.module.css";
 
 const TABS = [
-  { id: "today",    icon: "🗓", label: "Today"    },
+  { id: "today",    icon: "🗓", label: "Inbox"    },
   { id: "record",   icon: "🎙", label: "Record"   },
   { id: "history",  icon: "🕐", label: "History"  },
   { id: "settings", icon: "⚙️", label: "Settings" },

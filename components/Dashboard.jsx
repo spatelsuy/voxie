@@ -13,6 +13,9 @@ function todayStr() {
 }
 
 function dateLabel(dateStr) {
+  return "Inbox";
+  /*
+  // The below code will be used later
   if (!dateStr) return "";
   const d   = new Date(dateStr);
   const now = new Date();
@@ -22,15 +25,15 @@ function dateLabel(dateStr) {
     d.getDate()     === now.getDate();
   if (isToday) return "Today";
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
+  */
+  }
 
-function priorityDotClass(p) {
-  if (p === "high")   return styles.dotHigh;
-  if (p === "medium") return styles.dotMed;
-  return styles.dotLow;
+function rowTypeClass(type) {
+  if (type === "task") return styles.rowTask;
+  if (type === "event") return styles.rowEvent;
+  if (type === "reminder") return styles.rowReminder;
+  return styles.rowNote;
 }
-
-const TYPE_ICON = { task: null, event: "📅", reminder: "🔔", note: "📝" };
 
 /* ─── Group items by date, then by type ───────────── */
 function groupItems(items) {
@@ -112,7 +115,6 @@ function EditItemModal({ item, onSave, onClose }) {
 
 /* ─── Single item row ─────────────────────────────── */
 function ItemRow({ item, onDelete, onStatusChange, onEdit }) {
-  const icon = TYPE_ICON[item.type];
   const [status, setStatus] = useState(item.status || STATUS_INPROGRESS);
   const isCompleted = status === STATUS_COMPLETED;
 
@@ -127,28 +129,24 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit }) {
   }
 
   return (
-    <div className={`${styles.row} ${isCompleted ? styles.rowCompleted : ""}`}>
-      {icon
-        ? <span className={styles.rowIcon}>{icon}</span>
-        : <div className={`${styles.dot} ${priorityDotClass(item.priority)}`} />
-      }
+    <div className={`${styles.row} ${rowTypeClass(item.type)} ${isCompleted ? styles.rowCompleted : ""}`}>
       <button
         className={`${styles.rowStatus} ${isCompleted ? styles.rowStatusDone : ""}`}
         onClick={handleStatusToggle}
         aria-label={isCompleted ? "Mark item as in progress" : "Mark item as completed"}
         title={isCompleted ? "Mark as in progress" : "Mark as completed"}
-      >
-        {isCompleted ? "Done" : "Open"}
-      </button>
-      <span className={styles.rowText}>{item.title}</span>
-      {item.time && <span className={styles.rowTime}>{item.time}</span>}
+      />
+      <div className={styles.rowMain}>
+        <span className={styles.rowText}>{item.title}</span>
+        {item.time && <span className={styles.rowTime}>{item.time}</span>}
+      </div>
       <button
         className={styles.rowEdit}
         onClick={() => onEdit(item)}
         aria-label="Edit item"
         title="Edit"
       >
-        Edit
+        •••
       </button>
       <button
         className={styles.rowDelete}
@@ -234,8 +232,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
             return (
               <div key={dateKey} className={styles.dateGroup}>
                 {/* Date separator */}
-                <div className={styles.dateLabel}>{dateLabel(dateKey)}</div>
-
+                {/* <div className={styles.dateLabel}>{dateLabel(dateKey)}</div> */}
                 {grp.events.length > 0 && (
                   <>
                     <div className={styles.sec}>Events</div>
