@@ -4,11 +4,12 @@ import styles from "../styles/settings.module.css";
 const DEFAULT_SILENCE_SEC = 10;
 
 export default function Settings({ dbWarning, recordingsCount }) {
-  const [silenceSec, setSilenceSec] = useState(DEFAULT_SILENCE_SEC);
-  const [autoA2T,    setAutoA2T]    = useState(false);
-  const [userName,   setUserName]   = useState("SunilK");
-  const [editingName, setEditingName] = useState(false);
-  const [nameInput,  setNameInput]  = useState("SunilK");
+  const [silenceSec,    setSilenceSec]    = useState(DEFAULT_SILENCE_SEC);
+  const [autoPause,     setAutoPause]     = useState(true);  // auto-pause on silence — on by default
+  const [autoA2T,       setAutoA2T]       = useState(false); // auto-run A2T after stop
+  const [userName,      setUserName]      = useState("SunilK");
+  const [editingName,   setEditingName]   = useState(false);
+  const [nameInput,     setNameInput]     = useState("SunilK");
 
   const totalMB = dbWarning?.text?.match(/([\d.]+\s*(MB|KB))/)?.[0] ?? "—";
 
@@ -33,8 +34,8 @@ export default function Settings({ dbWarning, recordingsCount }) {
             <span className={styles.rowIcon}>🔇</span>
             <span className={styles.rowLabel}>Auto-pause on silence</span>
             <button
-              className={`${styles.toggle} ${autoA2T ? "" : styles.toggleOn}`}
-              onClick={() => setAutoA2T((p) => !p)}
+              className={`${styles.toggle} ${autoPause ? styles.toggleOn : ""}`}
+              onClick={() => setAutoPause((p) => !p)}
               aria-label="Toggle auto-pause"
             >
               <span className={styles.toggleThumb} />
