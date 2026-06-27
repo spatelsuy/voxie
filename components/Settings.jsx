@@ -3,7 +3,7 @@ import styles from "../styles/settings.module.css";
 
 const DEFAULT_SILENCE_SEC = 10;
 
-export default function Settings({ dbWarning, recordingsCount }) {
+export default function Settings({ dbWarning, recordingsCount, showCompletedItems, onToggleShowCompleted }) {
   const [silenceSec,    setSilenceSec]    = useState(DEFAULT_SILENCE_SEC);
   const [autoPause,     setAutoPause]     = useState(true);  // auto-pause on silence — on by default
   const [autoA2T,       setAutoA2T]       = useState(false); // auto-run A2T after stop
@@ -88,6 +88,23 @@ export default function Settings({ dbWarning, recordingsCount }) {
                 {userName} ›
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Tasks */}
+        <div className={styles.group}>
+          <div className={styles.groupLabel}>Tasks</div>
+
+          <div className={styles.row}>
+            <span className={styles.rowIcon}>✅</span>
+            <span className={styles.rowLabel}>Show completed items</span>
+            <button
+              className={`${styles.toggle} ${showCompletedItems ? styles.toggleOn : ""}`}
+              onClick={onToggleShowCompleted}
+              aria-label="Toggle completed items"
+            >
+              <span className={styles.toggleThumb} />
+            </button>
           </div>
         </div>
 

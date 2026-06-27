@@ -155,6 +155,7 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
     context:  t.context  || null,
     related:  t.related_to || null,
     isDeadline: !!t.is_deadline,
+    status:   "inprogress",
   }));
 
   (a.events || []).forEach((t, i) => items.push({
@@ -167,6 +168,7 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
     context:  t.context  || null,
     related:  t.related_to || null,
     isDeadline: false,
+    status:   "inprogress",
   }));
 
   (a.reminders || []).forEach((t, i) => items.push({
@@ -179,6 +181,7 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
     context:  t.context  || null,
     related:  t.related_to || null,
     isDeadline: false,
+    status:   "inprogress",
   }));
 
   (a.notes || []).forEach((t, i) => items.push({
@@ -191,6 +194,7 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
     context:  t.context || null,
     related:  t.related_to || null,
     isDeadline: false,
+    status:   "inprogress",
   }));
 
   return items;
@@ -250,7 +254,10 @@ export default function useOrganizerDB() {
         if (mounted) {
           setRecordings(restored);
           setA2tResults(a2tMap);
-          setItems(savedItems);
+          setItems(savedItems.map((item) => ({
+            ...item,
+            status: item.status || "inprogress",
+          })));
           computeDBWarning(restored);
         }
       } catch (err) {
@@ -307,18 +314,27 @@ export default function useOrganizerDB() {
   const saveA2TResult = useCallback(async (recordingId, data, recordingDate) => {
     setA2tResults((prev) => ({ ...prev, [recordingId]: data }));
 
-    const newItems = extractItems(data, recordingId, recordingDate);
+    let mergedItems = [];
     setItems((prev) => {
-      // Remove any previous items from this recording (re-run scenario)
+      const existingById = new Map(
+        prev
+          .filter((item) => item.sourceRecordingId === recordingId)
+          .map((item) => [item.id, item])
+      );
+      const newItems = extractItems(data, recordingId, recordingDate).map((item) => ({
+        ...item,
+        status: existingById.get(item.id)?.status || item.status,
+      }));
       const filtered = prev.filter((i) => i.sourceRecordingId !== recordingId);
+      mergedItems = newItems;
       return [...filtered, ...newItems];
     });
 
     if (dbRef.current) {
       try {
         await dbSaveA2T(dbRef.current, recordingId, data);
-        if (newItems.length > 0)
-          await dbSaveItems(dbRef.current, newItems);
+        if (mergedItems.length > 0)
+          await dbSaveItems(dbRef.current, mergedItems);
       } catch (err) { console.error("Failed to save A2T result:", err); }
     }
   }, []);
@@ -332,9 +348,24 @@ export default function useOrganizerDB() {
     }
   }, []);
 
+  const updateItemStatus = useCallback(async (itemId, status) => {
+    const currentItem = items.find((item) => item.id === itemId);
+    if (!currentItem) return;
+
+    const updatedItem = { ...currentItem, status };
+    setItems((prev) => prev.map((item) => (
+      item.id === itemId ? updatedItem : item
+    )));
+
+    if (dbRef.current) {
+      try { await dbSaveItems(dbRef.current, [updatedItem]); }
+      catch (err) { console.error("Failed to update item status:", err); }
+    }
+  }, [items]);
+
   return {
     dbRef,
     recordings, a2tResults, items, dbWarning,
-    addRecording, deleteRecording, saveA2TResult, deleteItem,
+    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus,
   };
 }

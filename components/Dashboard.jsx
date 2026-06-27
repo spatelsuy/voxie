@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
 import styles from "../styles/dashboard.module.css";
+
+const STATUS_COMPLETED = "completed";
+const STATUS_INPROGRESS = "inprogress";
 
 /* ─── Helpers ─────────────────────────────────────── */
 function todayStr() {
@@ -53,14 +57,35 @@ function groupItems(items) {
 }
 
 /* ─── Single item row ─────────────────────────────── */
-function ItemRow({ item, onDelete }) {
+function ItemRow({ item, onDelete, onStatusChange }) {
   const icon = TYPE_ICON[item.type];
+  const [status, setStatus] = useState(item.status || STATUS_INPROGRESS);
+  const isCompleted = status === STATUS_COMPLETED;
+
+  useEffect(() => {
+    setStatus(item.status || STATUS_INPROGRESS);
+  }, [item.status]);
+
+  async function handleStatusToggle() {
+    const nextStatus = isCompleted ? STATUS_INPROGRESS : STATUS_COMPLETED;
+    setStatus(nextStatus);
+    await onStatusChange(item.id, nextStatus);
+  }
+
   return (
-    <div className={styles.row}>
+    <div className={`${styles.row} ${isCompleted ? styles.rowCompleted : ""}`}>
       {icon
         ? <span className={styles.rowIcon}>{icon}</span>
         : <div className={`${styles.dot} ${priorityDotClass(item.priority)}`} />
       }
+      <button
+        className={`${styles.rowStatus} ${isCompleted ? styles.rowStatusDone : ""}`}
+        onClick={handleStatusToggle}
+        aria-label={isCompleted ? "Mark item as in progress" : "Mark item as completed"}
+        title={isCompleted ? "Mark as in progress" : "Mark as completed"}
+      >
+        {isCompleted ? "Done" : "Open"}
+      </button>
       <span className={styles.rowText}>{item.title}</span>
       {item.time && <span className={styles.rowTime}>{item.time}</span>}
       <button
@@ -76,13 +101,16 @@ function ItemRow({ item, onDelete }) {
 }
 
 /* ─── Main component ──────────────────────────────── */
-export default function Dashboard({ items, onRecordPress, onDeleteItem }) {
-  const grouped  = groupItems(items);
+export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatusChange, showCompletedItems }) {
+  const visibleItems = showCompletedItems
+    ? items
+    : items.filter((item) => item.status !== STATUS_COMPLETED);
+  const grouped  = groupItems(visibleItems);
   const dates    = Object.keys(grouped);
-  const total    = items.length;
-  const taskCnt  = items.filter((i) => i.type === "task").length;
-  const eventCnt = items.filter((i) => i.type === "event").length;
-  const remCnt   = items.filter((i) => i.type === "reminder").length;
+  const total    = visibleItems.length;
+  const taskCnt  = visibleItems.filter((i) => i.type === "task").length;
+  const eventCnt = visibleItems.filter((i) => i.type === "event").length;
+  const remCnt   = visibleItems.filter((i) => i.type === "reminder").length;
   const isEmpty  = total === 0;
 
   return (
@@ -142,7 +170,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem }) {
                   <>
                     <div className={styles.sec}>Events</div>
                     {grp.events.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
                     ))}
                   </>
                 )}
@@ -150,7 +178,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem }) {
                   <>
                     <div className={styles.sec}>Tasks</div>
                     {grp.tasks.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
                     ))}
                   </>
                 )}
@@ -158,7 +186,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem }) {
                   <>
                     <div className={styles.sec}>Reminders</div>
                     {grp.reminders.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
                     ))}
                   </>
                 )}
@@ -166,7 +194,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem }) {
                   <>
                     <div className={styles.sec}>Notes</div>
                     {grp.notes.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
                     ))}
                   </>
                 )}
