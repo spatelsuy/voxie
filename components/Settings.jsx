@@ -1,20 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "../styles/settings.module.css";
 
-const DEFAULT_SILENCE_SEC = 10;
-
-export default function Settings({ dbWarning, recordingsCount, showCompletedItems, onToggleShowCompleted }) {
-  const [silenceSec,    setSilenceSec]    = useState(DEFAULT_SILENCE_SEC);
-  const [autoPause,     setAutoPause]     = useState(true);  // auto-pause on silence — on by default
-  const [autoA2T,       setAutoA2T]       = useState(false); // auto-run A2T after stop
-  const [userName,      setUserName]      = useState("SunilK");
-  const [editingName,   setEditingName]   = useState(false);
-  const [nameInput,     setNameInput]     = useState("SunilK");
+export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange }) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(settings.userName);
 
   const totalMB = dbWarning?.text?.match(/([\d.]+\s*(MB|KB))/)?.[0] ?? "—";
 
+  useEffect(() => {
+    setNameInput(settings.userName);
+  }, [settings.userName]);
+
   function saveName() {
-    setUserName(nameInput.trim() || "SunilK");
+    onSettingChange("userName", nameInput.trim() || "SunilK");
     setEditingName(false);
   }
 
@@ -34,8 +32,8 @@ export default function Settings({ dbWarning, recordingsCount, showCompletedItem
             <span className={styles.rowIcon}>🔇</span>
             <span className={styles.rowLabel}>Auto-pause on silence</span>
             <button
-              className={`${styles.toggle} ${autoPause ? styles.toggleOn : ""}`}
-              onClick={() => setAutoPause((p) => !p)}
+              className={`${styles.toggle} ${settings.autoPause ? styles.toggleOn : ""}`}
+              onClick={() => onSettingChange("autoPause", !settings.autoPause)}
               aria-label="Toggle auto-pause"
             >
               <span className={styles.toggleThumb} />
@@ -46,9 +44,9 @@ export default function Settings({ dbWarning, recordingsCount, showCompletedItem
             <span className={styles.rowIcon}>⏱</span>
             <span className={styles.rowLabel}>Silence timeout</span>
             <div className={styles.stepper}>
-              <button className={styles.stepBtn} onClick={() => setSilenceSec((s) => Math.max(5, s - 5))}>−</button>
-              <span className={styles.stepVal}>{silenceSec}s</span>
-              <button className={styles.stepBtn} onClick={() => setSilenceSec((s) => Math.min(120, s + 5))}>+</button>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.max(5, settings.silenceSec - 5))}>−</button>
+              <span className={styles.stepVal}>{settings.silenceSec}s</span>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.min(120, settings.silenceSec + 5))}>+</button>
             </div>
           </div>
         </div>
@@ -61,8 +59,8 @@ export default function Settings({ dbWarning, recordingsCount, showCompletedItem
             <span className={styles.rowIcon}>🤖</span>
             <span className={styles.rowLabel}>Auto-run A2T after stop</span>
             <button
-              className={`${styles.toggle} ${autoA2T ? styles.toggleOn : ""}`}
-              onClick={() => setAutoA2T((p) => !p)}
+              className={`${styles.toggle} ${settings.autoA2T ? styles.toggleOn : ""}`}
+              onClick={() => onSettingChange("autoA2T", !settings.autoA2T)}
               aria-label="Toggle auto A2T"
             >
               <span className={styles.toggleThumb} />
@@ -84,8 +82,8 @@ export default function Settings({ dbWarning, recordingsCount, showCompletedItem
                 <button className={styles.nameSave} onClick={saveName}>Save</button>
               </div>
             ) : (
-              <button className={styles.rowVal} onClick={() => { setNameInput(userName); setEditingName(true); }}>
-                {userName} ›
+              <button className={styles.rowVal} onClick={() => { setNameInput(settings.userName); setEditingName(true); }}>
+                {settings.userName} ›
               </button>
             )}
           </div>
@@ -99,8 +97,8 @@ export default function Settings({ dbWarning, recordingsCount, showCompletedItem
             <span className={styles.rowIcon}>✅</span>
             <span className={styles.rowLabel}>Show completed items</span>
             <button
-              className={`${styles.toggle} ${showCompletedItems ? styles.toggleOn : ""}`}
-              onClick={onToggleShowCompleted}
+              className={`${styles.toggle} ${settings.showCompletedItems ? styles.toggleOn : ""}`}
+              onClick={() => onSettingChange("showCompletedItems", !settings.showCompletedItems)}
               aria-label="Toggle completed items"
             >
               <span className={styles.toggleThumb} />

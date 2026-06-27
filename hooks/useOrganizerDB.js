@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 /* ─── Constants ───────────────────────────────────── */
 export const DB_NAME          = "VoiceRecorderDB";
-export const DB_VERSION       = 3;               // v3 adds items store (DB-2)
+export const DB_VERSION       = 4;               // v4 adds settings store
 export const STORE_RECORDINGS = "recordings";
 export const STORE_A2T        = "a2t_results";
 export const STORE_ITEMS      = "organizer_items"; // DB-2 — independent item lifecycle
+export const STORE_SETTINGS   = "settings";
 export const WARN_MB          = 50;
 export const CRITICAL_MB      = 200;
 
@@ -25,6 +26,8 @@ function openDB() {
         s.createIndex("bySource", "sourceRecordingId", { unique: false });
         s.createIndex("byDate",   "recordingDate",     { unique: false });
       }
+      if (!db.objectStoreNames.contains(STORE_SETTINGS))
+        db.createObjectStore(STORE_SETTINGS, { keyPath: "key" });
     };
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror   = (e) => reject(e.target.error);
@@ -138,6 +141,24 @@ function dbLoadAllItems(db) {
   });
 }
 
+export function dbSaveSetting(db, key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_SETTINGS, "readwrite");
+    tx.objectStore(STORE_SETTINGS).put({ key, value });
+    tx.oncomplete = resolve;
+    tx.onerror    = (e) => reject(e.target.error);
+  });
+}
+
+function dbLoadAllSettings(db) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(STORE_SETTINGS, "readonly");
+    const req = tx.objectStore(STORE_SETTINGS).getAll();
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror   = (e) => reject(e.target.error);
+  });
+}
+
 /* ─── Helper: extract flat items from A2T JSON ────── */
 export function extractItems(a2tData, sourceRecordingId, recordingDate) {
   const a     = a2tData?.analysis;
@@ -207,6 +228,13 @@ export default function useOrganizerDB() {
   const [recordings, setRecordings] = useState([]);
   const [a2tResults, setA2tResults] = useState({}); // { [recordingId]: jsonData }
   const [items,      setItems]      = useState([]); // DB-2 flat items
+  const [settings,   setSettings]   = useState({
+    showCompletedItems: false,
+    autoPause: true,
+    autoA2T: false,
+    silenceSec: 10,
+    userName: "SunilK",
+  });
   const [dbWarning,  setDbWarning]  = useState(null);
 
   /* DB size warning (based on blob sizes) */
@@ -233,10 +261,11 @@ export default function useOrganizerDB() {
         const db = await openDB();
         dbRef.current = db;
 
-        const [saved, savedA2T, savedItems] = await Promise.all([
+        const [saved, savedA2T, savedItems, savedSettings] = await Promise.all([
           dbLoadAllRecordings(db),
           dbLoadAllA2T(db),
           dbLoadAllItems(db),
+          dbLoadAllSettings(db),
         ]);
 
         saved.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -258,6 +287,10 @@ export default function useOrganizerDB() {
             ...item,
             status: item.status || "inprogress",
           })));
+          setSettings((prev) => ({
+            ...prev,
+            ...Object.fromEntries(savedSettings.map((entry) => [entry.key, entry.value])),
+          }));
           computeDBWarning(restored);
         }
       } catch (err) {
@@ -363,9 +396,17 @@ export default function useOrganizerDB() {
     }
   }, [items]);
 
+  const saveSetting = useCallback(async (key, value) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    if (dbRef.current) {
+      try { await dbSaveSetting(dbRef.current, key, value); }
+      catch (err) { console.error("Failed to save setting:", err); }
+    }
+  }, []);
+
   return {
     dbRef,
-    recordings, a2tResults, items, dbWarning,
-    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus,
+    recordings, a2tResults, items, settings, dbWarning,
+    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, saveSetting,
   };
 }

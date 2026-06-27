@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useOrganizerDB from "../hooks/useOrganizerDB";
 import TabBar         from "../components/TabBar";
 import Dashboard      from "../components/Dashboard";
@@ -9,26 +9,15 @@ import Settings       from "../components/Settings";
 import pageStyles     from "../styles/page.module.css";
 
 const API_URL = "https://decode-cri.vercel.app/a2t/transcribe";
-const SHOW_COMPLETED_KEY = "voxie_show_completed_items";
 
 export default function Home() {
-  const [activeTab,          setActiveTab]          = useState("today");
-  const [autoA2TStatus,      setAutoA2TStatus]      = useState(null); // null | "processing" | "done" | "error"
-  const [showCompletedItems, setShowCompletedItems] = useState(false);
+  const [activeTab,     setActiveTab]     = useState("today");
+  const [autoA2TStatus, setAutoA2TStatus] = useState(null); // null | "processing" | "done" | "error"
 
   const {
-    recordings, a2tResults, items, dbWarning,
-    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus,
+    recordings, a2tResults, items, settings, dbWarning,
+    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, saveSetting,
   } = useOrganizerDB();
-
-  useEffect(() => {
-    const savedValue = window.localStorage.getItem(SHOW_COMPLETED_KEY);
-    if (savedValue === "true") setShowCompletedItems(true);
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(SHOW_COMPLETED_KEY, String(showCompletedItems));
-  }, [showCompletedItems]);
 
   /* When a recording is saved, persist it then stay on Record tab
      (auto-A2T will navigate to Today when done; manual stays in History) */
@@ -90,7 +79,7 @@ export default function Home() {
               onRecordPress={() => setActiveTab("record")}
               onDeleteItem={deleteItem}
               onStatusChange={updateItemStatus}
-              showCompletedItems={showCompletedItems}
+              showCompletedItems={settings.showCompletedItems}
             />
           )}
           {activeTab === "record" && (
@@ -114,8 +103,8 @@ export default function Home() {
             <Settings
               dbWarning={dbWarning}
               recordingsCount={recordings.length}
-              showCompletedItems={showCompletedItems}
-              onToggleShowCompleted={() => setShowCompletedItems((prev) => !prev)}
+              settings={settings}
+              onSettingChange={saveSetting}
             />
           )}
         </div>
