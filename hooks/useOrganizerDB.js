@@ -164,7 +164,7 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
   const a     = a2tData?.analysis;
   if (!a) return [];
   const items = [];
-  const base  = { sourceRecordingId, recordingDate };
+  const base  = { sourceRecordingId, recordingDate, isEdited: false };
 
   (a.tasks || []).forEach((t, i) => items.push({
     ...base,
@@ -354,10 +354,22 @@ export default function useOrganizerDB() {
           .filter((item) => item.sourceRecordingId === recordingId)
           .map((item) => [item.id, item])
       );
-      const newItems = extractItems(data, recordingId, recordingDate).map((item) => ({
-        ...item,
-        status: existingById.get(item.id)?.status || item.status,
-      }));
+      const newItems = extractItems(data, recordingId, recordingDate).map((item) => {
+        const existingItem = existingById.get(item.id);
+        if (existingItem?.isEdited) {
+          return {
+            ...item,
+            ...existingItem,
+            sourceRecordingId: item.sourceRecordingId,
+            recordingDate: item.recordingDate,
+          };
+        }
+        return {
+          ...item,
+          status: existingItem?.status || item.status,
+          isEdited: existingItem?.isEdited || item.isEdited,
+        };
+      });
       const filtered = prev.filter((i) => i.sourceRecordingId !== recordingId);
       mergedItems = newItems;
       return [...filtered, ...newItems];
@@ -396,6 +408,21 @@ export default function useOrganizerDB() {
     }
   }, [items]);
 
+  const updateItem = useCallback(async (itemId, changes) => {
+    const currentItem = items.find((item) => item.id === itemId);
+    if (!currentItem) return;
+
+    const updatedItem = { ...currentItem, ...changes, isEdited: true };
+    setItems((prev) => prev.map((item) => (
+      item.id === itemId ? updatedItem : item
+    )));
+
+    if (dbRef.current) {
+      try { await dbSaveItems(dbRef.current, [updatedItem]); }
+      catch (err) { console.error("Failed to update item:", err); }
+    }
+  }, [items]);
+
   const saveSetting = useCallback(async (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     if (dbRef.current) {
@@ -407,6 +434,6 @@ export default function useOrganizerDB() {
   return {
     dbRef,
     recordings, a2tResults, items, settings, dbWarning,
-    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, saveSetting,
+    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, updateItem, saveSetting,
   };
 }

@@ -118,7 +118,7 @@
   white-space: nowrap;
 }
 
-/* per-item delete button */
+.rowEdit,
 .rowDelete {
   background: none;
   border: none;
@@ -132,7 +132,80 @@
   line-height: 1;
   transition: color 0.15s;
 }
+.rowEdit { color: var(--text-muted); }
+.rowEdit:hover { color: var(--primary); }
+
+/* per-item delete button */
+.rowDelete {
+}
 .rowDelete:hover { color: var(--danger); }
+
+.modalOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 20;
+}
+.modal {
+  width: 100%;
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+}
+.modalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 14px;
+  text-transform: capitalize;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-main);
+  background: #ffffff;
+}
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.modalBtnSecondary,
+.modalBtnPrimary {
+  flex: unset;
+  min-height: unset;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.modalBtnSecondary {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+.modalBtnPrimary {
+  background: var(--primary);
+  color: #ffffff;
+}
 
 /* priority dots */
 .dot      { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }

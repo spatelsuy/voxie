@@ -16,7 +16,7 @@ export default function Home() {
 
   const {
     recordings, a2tResults, items, settings, dbWarning,
-    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, saveSetting,
+    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, updateItem, saveSetting,
   } = useOrganizerDB();
 
   /* When a recording is saved, persist it then stay on Record tab
@@ -79,6 +79,7 @@ export default function Home() {
               onRecordPress={() => setActiveTab("record")}
               onDeleteItem={deleteItem}
               onStatusChange={updateItemStatus}
+              onEditItem={updateItem}
               showCompletedItems={settings.showCompletedItems}
             />
           )}

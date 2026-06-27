@@ -3,6 +3,7 @@ import styles from "../styles/dashboard.module.css";
 
 const STATUS_COMPLETED = "completed";
 const STATUS_INPROGRESS = "inprogress";
+const PRIORITY_OPTIONS = ["high", "medium", "low"];
 
 /* ─── Helpers ─────────────────────────────────────── */
 function todayStr() {
@@ -56,8 +57,61 @@ function groupItems(items) {
   return dateMap;
 }
 
+function EditItemModal({ item, onSave, onClose }) {
+  const [title, setTitle] = useState(item.title || "");
+  const [time, setTime] = useState(item.time || "");
+  const [priority, setPriority] = useState(item.priority || "low");
+  const [context, setContext] = useState(item.context || "");
+
+  function handleSave() {
+    onSave(item.id, {
+      title: title.trim() || item.title,
+      time: time.trim() || null,
+      priority: item.type === "note" ? item.priority : priority,
+      context: context.trim() || null,
+    });
+    onClose();
+  }
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalTitle}>Edit {item.type}</div>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Title</span>
+          <input className={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        {item.type !== "note" && (
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Time</span>
+            <input className={styles.input} value={time} onChange={(e) => setTime(e.target.value)} />
+          </label>
+        )}
+        {item.type !== "note" && (
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Priority</span>
+            <select className={styles.input} value={priority} onChange={(e) => setPriority(e.target.value)}>
+              {PRIORITY_OPTIONS.map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Context</span>
+          <input className={styles.input} value={context} onChange={(e) => setContext(e.target.value)} />
+        </label>
+        <div className={styles.modalActions}>
+          <button className={styles.modalBtnSecondary} onClick={onClose}>Cancel</button>
+          <button className={styles.modalBtnPrimary} onClick={handleSave}>Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Single item row ─────────────────────────────── */
-function ItemRow({ item, onDelete, onStatusChange }) {
+function ItemRow({ item, onDelete, onStatusChange, onEdit }) {
   const icon = TYPE_ICON[item.type];
   const [status, setStatus] = useState(item.status || STATUS_INPROGRESS);
   const isCompleted = status === STATUS_COMPLETED;
@@ -89,6 +143,14 @@ function ItemRow({ item, onDelete, onStatusChange }) {
       <span className={styles.rowText}>{item.title}</span>
       {item.time && <span className={styles.rowTime}>{item.time}</span>}
       <button
+        className={styles.rowEdit}
+        onClick={() => onEdit(item)}
+        aria-label="Edit item"
+        title="Edit"
+      >
+        Edit
+      </button>
+      <button
         className={styles.rowDelete}
         onClick={() => onDelete(item.id)}
         aria-label="Delete item"
@@ -101,7 +163,8 @@ function ItemRow({ item, onDelete, onStatusChange }) {
 }
 
 /* ─── Main component ──────────────────────────────── */
-export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatusChange, showCompletedItems }) {
+export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems }) {
+  const [editingItem, setEditingItem] = useState(null);
   const visibleItems = showCompletedItems
     ? items
     : items.filter((item) => item.status !== STATUS_COMPLETED);
@@ -115,6 +178,13 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
 
   return (
     <div className={styles.wrap}>
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          onSave={onEditItem}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.title}>Voxie</div>
@@ -170,7 +240,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Events</div>
                     {grp.events.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
                     ))}
                   </>
                 )}
@@ -178,7 +248,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Tasks</div>
                     {grp.tasks.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
                     ))}
                   </>
                 )}
@@ -186,7 +256,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Reminders</div>
                     {grp.reminders.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
                     ))}
                   </>
                 )}
@@ -194,7 +264,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Notes</div>
                     {grp.notes.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} />
+                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
                     ))}
                   </>
                 )}
