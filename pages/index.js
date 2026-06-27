@@ -28,8 +28,20 @@ export default function Home() {
   /* Auto-A2T — called by VoiceRecorder when recording qualifies */
   async function handleAutoA2T(rec) {
     setAutoA2TStatus("processing");
+
+    // Get current date in local time
+    const today = new Date();
+
+    const year = today.getFullYear();
+    // Months are 0-indexed, so add 1 and pad with a leading zero if needed
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    const formattedDate = `${year}-${month}-${day}`;
+
     const formData = new FormData();
     formData.append("user_name", "SunilK");
+    formData.append("client_time", formattedDate);
     formData.append("file", rec.blob, "recording.webm");
     try {
       const res = await fetch(API_URL, { method: "POST", body: formData });
