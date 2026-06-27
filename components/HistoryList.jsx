@@ -76,8 +76,12 @@ export default function HistoryList({
   /* Transcribe a single recording */
   async function transcribeRec(rec) {
     setA2tLoading((p) => ({ ...p, [rec.id]: true }));
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
     const formData = new FormData();
     formData.append("user_name", "SunilK");
+    formData.append("client_time", formattedDate);
     formData.append("file", rec.blob, "recording.webm");
     try {
       const res = await fetch(API_URL, { method: "POST", body: formData });
