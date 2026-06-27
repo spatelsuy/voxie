@@ -8,7 +8,7 @@ import HistoryList    from "../components/HistoryList";
 import Settings       from "../components/Settings";
 import pageStyles     from "../styles/page.module.css";
 
-const API_URL = "https://decode-cri.vercel.app/a2t/transcribe";
+const API_URL = "/api/transcribe";
 
 export default function Home() {
   const [activeTab,     setActiveTab]     = useState("today");

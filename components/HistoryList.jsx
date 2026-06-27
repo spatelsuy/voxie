@@ -15,7 +15,7 @@ function formatDuration(sec) {
   return `${String(min).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-const API_URL = "https://decode-cri.vercel.app/a2t/transcribe";
+const API_URL = "/api/transcribe";
 
 /* ─── Confirmation dialog ─────────────────────────── */
 function ConfirmDialog({ recording, itemCount, onYes, onNo }) {
