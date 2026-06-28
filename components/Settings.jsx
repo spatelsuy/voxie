@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "../styles/settings.module.css";
 
-export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange }) {
+export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange, onShowOnboarding }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(settings.userName);
 
@@ -126,6 +126,11 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
         {/* About */}
         <div className={styles.group}>
           <div className={styles.groupLabel}>About</div>
+          <button className={styles.rowButton} onClick={onShowOnboarding}>
+            <span className={styles.rowIcon}>ℹ️</span>
+            <span className={styles.rowLabel}>How Voxie works</span>
+            <span className={styles.rowValMuted}>›</span>
+          </button>
           <div className={styles.row}>
             <span className={styles.rowIcon}>ℹ️</span>
             <span className={styles.rowLabel}>My Organizer</span>

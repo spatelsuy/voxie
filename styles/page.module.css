@@ -19,6 +19,17 @@
   overflow: hidden;
 }
 
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.32);
+}
+
 @media (min-width: 1024px) {
   .shell {
     width: 60%;

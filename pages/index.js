@@ -3,6 +3,7 @@ import { useState } from "react";
 import useOrganizerDB from "../hooks/useOrganizerDB";
 import TabBar         from "../components/TabBar";
 import Dashboard      from "../components/Dashboard";
+import OnboardingPanel from "../components/OnboardingPanel";
 import VoiceRecorder  from "../components/VoiceRecorder";
 import HistoryList    from "../components/HistoryList";
 import Settings       from "../components/Settings";
@@ -11,8 +12,9 @@ import pageStyles     from "../styles/page.module.css";
 const API_URL = "/api/transcribe";
 
 export default function Home() {
-  const [activeTab,     setActiveTab]     = useState("today");
-  const [autoA2TStatus, setAutoA2TStatus] = useState(null); // null | "processing" | "done" | "error"
+  const [activeTab,       setActiveTab]       = useState("today");
+  const [autoA2TStatus,   setAutoA2TStatus]   = useState(null); // null | "processing" | "done" | "error"
+  const [showOnboarding,  setShowOnboarding]  = useState(false);
 
   const {
     recordings, a2tResults, items, settings, dbWarning,
@@ -71,6 +73,18 @@ export default function Home() {
       </Head>
 
       <div className={pageStyles.shell}>
+        {showOnboarding && (
+          <div className={pageStyles.overlay}>
+            <OnboardingPanel
+              showClose
+              onClose={() => setShowOnboarding(false)}
+              onAction={() => {
+                setShowOnboarding(false);
+                setActiveTab("record");
+              }}
+            />
+          </div>
+        )}
         {/* ── Tab content ── */}
         <div className={pageStyles.content}>
           {activeTab === "today" && (
@@ -106,6 +120,7 @@ export default function Home() {
               recordingsCount={recordings.length}
               settings={settings}
               onSettingChange={saveSetting}
+              onShowOnboarding={() => setShowOnboarding(true)}
             />
           )}
         </div>

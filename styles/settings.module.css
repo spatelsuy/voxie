@@ -30,7 +30,8 @@
 }
 
 /* row */
-.row {
+.row,
+.rowButton {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -54,6 +55,11 @@
   border-radius: 0;
 }
 .rowValMuted { font-size: 13px; color: var(--text-muted); }
+.rowButton {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
 
 /* toggle */
 .toggle {

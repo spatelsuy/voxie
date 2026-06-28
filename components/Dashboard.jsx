@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import OnboardingPanel from "./OnboardingPanel";
 import styles from "../styles/dashboard.module.css";
 
 const STATUS_COMPLETED = "completed";
@@ -209,15 +210,8 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
         </div>
 
         {isEmpty ? (
-          <div className={styles.empty}>
-            <div className={styles.emptyIcon}>🎙</div>
-            <div className={styles.emptyTitle}>Nothing here yet</div>
-            <div className={styles.emptySub}>
-              Tap Record to speak your tasks, events and reminders
-            </div>
-            <button className={styles.emptyBtn} onClick={onRecordPress}>
-              Start Recording
-            </button>
+          <div className={styles.emptyStateWrap}>
+            <OnboardingPanel onAction={onRecordPress} />
           </div>
         ) : (
           dates.map((dateKey) => {
