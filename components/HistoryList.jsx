@@ -70,11 +70,15 @@ export default function HistoryList({
 }) {
   const [expandedA2T, setExpandedA2T] = useState({});
   const [a2tLoading,  setA2tLoading]  = useState({});
-  // confirm dialog state: null | { recording, itemCount }
   const [confirmFor,  setConfirmFor]  = useState(null);
 
   /* Transcribe a single recording */
   async function transcribeRec(rec) {
+    if (rec.kind === "text") {
+      setExpandedA2T((p) => ({ ...p, [rec.id]: true }));
+      return;
+    }
+
     setA2tLoading((p) => ({ ...p, [rec.id]: true }));
     const today = new Date();
     const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -87,7 +91,6 @@ export default function HistoryList({
       const res = await fetch(API_URL, { method: "POST", body: formData });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
-      // Pass recording date so items can be grouped by date in Dashboard
       await onSaveA2T(rec.id, data, rec.createdAt.toDateString());
       setExpandedA2T((p) => ({ ...p, [rec.id]: true }));
     } catch (err) {
@@ -109,27 +112,23 @@ export default function HistoryList({
     a.click();
   }
 
-  /* Tap Delete → show confirmation dialog */
   function handleDeleteClick(rec) {
     const itemCount = items.filter((i) => i.sourceRecordingId === rec.id).length;
     setConfirmFor({ recording: rec, itemCount });
   }
 
-  /* User confirmed — delete recording, optionally also items */
   function handleConfirmYes() {
     if (!confirmFor) return;
-    onDelete(confirmFor.recording.id, true); // true = also delete items
+    onDelete(confirmFor.recording.id, true);
     setConfirmFor(null);
   }
 
-  /* User chose "Keep items" — delete only recording + raw JSON */
   function handleConfirmNo() {
     if (!confirmFor) return;
-    onDelete(confirmFor.recording.id, false); // false = keep items
+    onDelete(confirmFor.recording.id, false);
     setConfirmFor(null);
   }
 
-  /* DB warning class */
   const warnClass =
     dbWarning?.level === "critical" ? styles.warnCritical :
     dbWarning?.level === "warn"     ? styles.warnWarn     :
@@ -137,7 +136,6 @@ export default function HistoryList({
 
   return (
     <div className={styles.wrap}>
-      {/* Confirmation dialog — rendered above everything */}
       {confirmFor && (
         <ConfirmDialog
           recording={confirmFor.recording}
@@ -147,18 +145,15 @@ export default function HistoryList({
         />
       )}
 
-      {/* Header */}
       <div className={styles.header}>
         <div className={styles.title}>History</div>
         <div className={styles.sub}>Recordings &amp; A2T results</div>
       </div>
 
-      {/* DB warning banner */}
       {dbWarning && (
         <div className={`${styles.warn} ${warnClass}`}>{dbWarning.text}</div>
       )}
 
-      {/* List */}
       <div className={styles.list}>
         {recordings.length === 0 ? (
           <div className={styles.empty}>No recordings yet. Tap Record to start.</div>
@@ -171,16 +166,17 @@ export default function HistoryList({
             const taskCount     = (a?.tasks     || []).length;
             const eventCount    = (a?.events    || []).length;
             const reminderCount = (a?.reminders || []).length;
+            const isTextEntry   = r.kind === "text";
 
             return (
               <div key={r.id} className={styles.card}>
                 <div className={styles.cardName}>{r.name}</div>
                 <div className={styles.cardMeta}>
-                  {formatSize(r.size)} &bull; {formatDuration(r.duration)} &bull;{" "}
-                  {r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {isTextEntry
+                    ? `${formatSize(r.size)} • typed entry • ${r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                    : `${formatSize(r.size)} • ${formatDuration(r.duration)} • ${r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                 </div>
 
-                {/* Result tags */}
                 {hasResult && (
                   <div className={styles.tags}>
                     {taskCount     > 0 && <span className={`${styles.tag} ${styles.tagTask}`}>{taskCount} task{taskCount > 1 ? "s" : ""}</span>}
@@ -189,28 +185,33 @@ export default function HistoryList({
                   </div>
                 )}
 
-                {/* Audio player */}
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                <audio controls src={r.url} className={styles.audio} />
+                {isTextEntry ? (
+                  <div className={styles.a2tPanel}>{r.text}</div>
+                ) : (
+                  <>
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <audio controls src={r.url} className={styles.audio} />
+                  </>
+                )}
 
-                {/* Actions */}
                 <div className={styles.actions}>
-                  <button className={styles.btnPlay} onClick={() => downloadFile(r.url)}>
-                    Download
-                  </button>
+                  {!isTextEntry && (
+                    <button className={styles.btnPlay} onClick={() => downloadFile(r.url)}>
+                      Download
+                    </button>
+                  )}
                   <button
                     className={styles.btnA2t}
                     onClick={() => hasResult ? togglePanel(r.id) : transcribeRec(r)}
                     disabled={isLoading}
                   >
-                    {isLoading ? "…" : hasResult ? (isExpanded ? "Hide" : "View A2T") : "A2T"}
+                    {isLoading ? "…" : hasResult ? (isExpanded ? "Hide" : "View A2T") : isTextEntry ? "View text" : "A2T"}
                   </button>
                   <button className={styles.btnDelete} onClick={() => handleDeleteClick(r)}>
                     Delete
                   </button>
                 </div>
 
-                {/* Inline A2T panel */}
                 {hasResult && isExpanded && (
                   <div className={styles.a2tPanel}>
                     <ResponseDisplay data={a2tResults[r.id]} />

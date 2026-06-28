@@ -39,9 +39,14 @@ export function dbSaveRecording(db, rec) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_RECORDINGS, "readwrite");
     tx.objectStore(STORE_RECORDINGS).put({
-      id: rec.id, name: rec.name, blob: rec.blob,
-      size: rec.size, duration: rec.duration,
+      id: rec.id,
+      name: rec.name,
+      blob: rec.blob || null,
+      size: rec.size,
+      duration: rec.duration,
       createdAt: rec.createdAt.toISOString(),
+      kind: rec.kind || "audio",
+      text: rec.text || null,
     });
     tx.oncomplete = resolve;
     tx.onerror    = (e) => reject(e.target.error);
@@ -271,10 +276,15 @@ export default function useOrganizerDB() {
         saved.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
         const restored = saved.map((e) => ({
-          id: e.id, name: e.name, blob: e.blob,
-          url: URL.createObjectURL(e.blob),
-          size: e.size, duration: e.duration,
+          id: e.id,
+          name: e.name,
+          blob: e.blob || null,
+          url: e.blob ? URL.createObjectURL(e.blob) : null,
+          size: e.size,
+          duration: e.duration,
           createdAt: new Date(e.createdAt),
+          kind: e.kind || "audio",
+          text: e.text || null,
         }));
 
         const a2tMap = {};
@@ -322,7 +332,7 @@ export default function useOrganizerDB() {
     setRecordings((prev) => {
       const i = prev.findIndex((r) => r.id === id);
       if (i === -1) return prev;
-      URL.revokeObjectURL(prev[i].url);
+      if (prev[i].url) URL.revokeObjectURL(prev[i].url);
       const next = [...prev.slice(0, i), ...prev.slice(i + 1)];
       computeDBWarning(next);
       return next;

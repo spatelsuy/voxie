@@ -10,10 +10,19 @@ const AUTO_A2T_MAX_SECONDS = 120;        // 2 minutes
 const AUTO_A2T_MAX_BYTES   = 2 * 1024 * 1024; // 2 MB
 
 /* ─── Component ───────────────────────────────────── */
-export default function VoiceRecorder({ onRecordingSaved, onAutoA2T, autoA2TStatus }) {
+export default function VoiceRecorder({
+  onRecordingSaved,
+  onAutoA2T,
+  onTextSubmit,
+  autoA2TStatus,
+}) {
   const [recState,   setRecState]   = useState("idle"); // idle | recording | paused
   const [statusText, setStatusText] = useState("Ready");
   const [pauseLabel, setPauseLabel] = useState("Pause");
+  const [isTextModalOpen, setIsTextModalOpen] = useState(false);
+  const [textValue, setTextValue] = useState("");
+  const [textError, setTextError] = useState("");
+  const [isSubmittingText, setIsSubmittingText] = useState(false);
 
   const mediaRecorderRef    = useRef(null);
   const streamRef           = useRef(null);
@@ -154,6 +163,39 @@ export default function VoiceRecorder({ onRecordingSaved, onAutoA2T, autoA2TStat
     return recorder;
   }
 
+  function openTextModal() {
+    setTextError("");
+    setIsTextModalOpen(true);
+  }
+
+  function closeTextModal() {
+    if (isSubmittingText) return;
+    setTextError("");
+    setIsTextModalOpen(false);
+  }
+
+  async function handleTextSubmit() {
+    const trimmedText = textValue.trim();
+    if (!trimmedText) {
+      setTextError("Enter some text to submit.");
+      return;
+    }
+    if (!onTextSubmit) return;
+
+    setIsSubmittingText(true);
+    setTextError("");
+
+    try {
+      await onTextSubmit(trimmedText);
+      setTextValue("");
+      setIsTextModalOpen(false);
+    } catch (error) {
+      setTextError(error.message || "Unable to submit text.");
+    } finally {
+      setIsSubmittingText(false);
+    }
+  }
+
   /* ── Start ─────────────────────────────────────── */
   async function startRecording() {
     try {
@@ -214,6 +256,7 @@ export default function VoiceRecorder({ onRecordingSaved, onAutoA2T, autoA2TStat
       }),
       id: Date.now(), blob, url,
       size: blob.size, duration, createdAt: new Date(),
+      kind: "audio",
     };
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (audioContextRef.current) audioContextRef.current.close();
@@ -242,18 +285,61 @@ export default function VoiceRecorder({ onRecordingSaved, onAutoA2T, autoA2TStat
   /* Derive display status — auto-A2T feedback overrides local status when idle */
   const displayStatus =
     recState === "idle" && autoA2TStatus === "processing" ? "🤖 Analysing your recording…" :
-    recState === "idle" && autoA2TStatus === "done"       ? "✅ Done — check Today tab"     :
+    recState === "idle" && autoA2TStatus === "done"       ? "✅ Done — check Inbox tab"     :
     recState === "idle" && autoA2TStatus === "error"      ? "⚠️ A2T failed — try manually"  :
     statusText;
 
   return (
     <div className={styles.wrap}>
+      {isTextModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <div className={styles.modalTitle}>Submit text</div>
+                <div className={styles.modalSub}>Type your tasks, reminders, events, or notes</div>
+              </div>
+              <button className={styles.modalClose} onClick={closeTextModal} disabled={isSubmittingText}>
+                Close
+              </button>
+            </div>
+            <textarea
+              className={styles.textarea}
+              value={textValue}
+              onChange={(e) => {
+                setTextValue(e.target.value);
+                if (textError) setTextError("");
+              }}
+              placeholder="Example: Remind me tomorrow at 10am to call the dentist and note that I need to review the Q3 budget."
+              rows={8}
+            />
+            {textError && <div className={styles.textError}>{textError}</div>}
+            <div className={styles.modalActions}>
+              <button className={styles.modalSecondaryBtn} onClick={closeTextModal} disabled={isSubmittingText}>
+                Cancel
+              </button>
+              <button
+                className={styles.modalPrimaryBtn}
+                onClick={handleTextSubmit}
+                disabled={isSubmittingText || !textValue.trim()}
+              >
+                {isSubmittingText ? "Submitting…" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.header}>
         <div className={styles.title}>Record</div>
         <div className={styles.sub}>Speak your tasks, events and reminders</div>
       </div>
 
       <div className={styles.body}>
+        <button className={styles.moreBtn} onClick={openTextModal} disabled={isActiveRec || autoA2TStatus === "processing"}>
+          ...
+        </button>
+
         {/* Waveform */}
         <canvas ref={canvasRef} className={styles.canvas} />
 
