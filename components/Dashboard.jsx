@@ -121,7 +121,10 @@ function SourceModal({ sourceText, onClose }) {
     <div className={styles.modalOverlay}>
       <div className={`${styles.modal} ${styles.sourceModal}`}>
         <div className={styles.sourceModalHeader}>
-          <div className={styles.sourceModalSub}>Original transcription for this item</div>
+          <div>
+            <div className={styles.sourceModalTitle}>Original transcription</div>
+            <div className={styles.sourceModalSub}>Source text for this extracted item</div>
+          </div>
           <button className={styles.sourceModalClose} onClick={onClose} aria-label="Close source modal">
             ✕
           </button>

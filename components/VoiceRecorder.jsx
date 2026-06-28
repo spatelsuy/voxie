@@ -295,7 +295,10 @@ export default function VoiceRecorder({
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <div className={styles.modalSub}>Type your tasks, reminders, events, or notes</div>
+              <div>
+                <div className={styles.modalTitle}>Text input</div>
+                <div className={styles.modalSub}>Type your tasks, reminders, events, or notes</div>
+              </div>
               <button className={styles.modalClose} onClick={closeTextModal} disabled={isSubmittingText} aria-label="Close text modal">
                 ✕
               </button>
@@ -330,8 +333,8 @@ export default function VoiceRecorder({
       </div>
 
       <div className={styles.body}>
-        <button className={styles.moreBtn} onClick={openTextModal} disabled={isActiveRec || autoA2TStatus === "processing"}>
-          ...
+        <button className={styles.moreBtn} onClick={openTextModal} disabled={isActiveRec || autoA2TStatus === "processing"} aria-label="Open text input">
+          T
         </button>
 
         {/* Waveform */}
