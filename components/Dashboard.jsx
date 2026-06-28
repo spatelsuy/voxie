@@ -114,10 +114,30 @@ function EditItemModal({ item, onSave, onClose }) {
   );
 }
 
+function SourceModal({ sourceText, onClose }) {
+  if (!sourceText) return null;
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={`${styles.modal} ${styles.sourceModal}`}>
+        <div className={styles.sourceModalHeader}>
+          <div className={styles.sourceModalSub}>Original transcription for this item</div>
+          <button className={styles.sourceModalClose} onClick={onClose} aria-label="Close source modal">
+            ✕
+          </button>
+        </div>
+        <div className={styles.sourceBody}>{sourceText}</div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Single item row ─────────────────────────────── */
-function ItemRow({ item, onDelete, onStatusChange, onEdit }) {
+function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSource }) {
   const [status, setStatus] = useState(item.status || STATUS_INPROGRESS);
+  const [isExpanded, setIsExpanded] = useState(false);
   const isCompleted = status === STATUS_COMPLETED;
+  const hasPriority = !!item.priority;
 
   useEffect(() => {
     setStatus(item.status || STATUS_INPROGRESS);
@@ -130,17 +150,52 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit }) {
   }
 
   return (
-    <div className={`${styles.row} ${rowTypeClass(item.type)} ${isCompleted ? styles.rowCompleted : ""}`}>
+    <div className={`${styles.row} ${rowTypeClass(item.type)} ${isCompleted ? styles.rowCompleted : ""} ${isExpanded ? styles.rowExpanded : ""}`}>
       <button
         className={`${styles.rowStatus} ${isCompleted ? styles.rowStatusDone : ""}`}
         onClick={handleStatusToggle}
         aria-label={isCompleted ? "Mark item as in progress" : "Mark item as completed"}
         title={isCompleted ? "Mark as in progress" : "Mark as completed"}
       />
-      <div className={styles.rowMain}>
-        <span className={styles.rowText}>{item.title}</span>
-        {item.time && <span className={styles.rowTime}>{item.time}</span>}
-      </div>
+      <button
+        className={styles.rowMain}
+        onClick={() => setIsExpanded((prev) => !prev)}
+        aria-expanded={isExpanded}
+        title={isExpanded ? "Collapse details" : "Expand details"}
+      >
+        <div className={styles.rowSummary}>
+          <span className={styles.rowText}>{item.title}</span>
+          {item.time && <span className={styles.rowTime}>{item.time}</span>}
+        </div>
+        {isExpanded && (
+          <div className={styles.rowDetails}>
+            {(hasPriority || item.isDeadline || hasSource) && (
+              <div className={styles.rowMetaTags}>
+                {hasPriority && (
+                  <span className={`${styles.rowMetaTag} ${styles.rowMetaPriority}`}>
+                    Priority: {item.priority}
+                  </span>
+                )}
+                {item.isDeadline && (
+                  <span className={`${styles.rowMetaTag} ${styles.rowMetaDeadline}`}>
+                    Deadline
+                  </span>
+                )}
+                {hasSource && (
+                  <button className={`${styles.rowMetaTag} ${styles.rowSourceBtn}`} onClick={onViewSource}>
+                    Open source
+                  </button>
+                )}
+              </div>
+            )}
+            {item.context && (
+              <div className={`${styles.rowMetaTag} ${styles.rowMetaContext}`}>
+                {item.context}
+              </div>
+            )}
+          </div>
+        )}
+      </button>
       <button
         className={styles.rowEdit}
         onClick={() => onEdit(item)}
@@ -162,8 +217,9 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit }) {
 }
 
 /* ─── Main component ──────────────────────────────── */
-export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems }) {
+export default function Dashboard({ items, a2tResults, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems }) {
   const [editingItem, setEditingItem] = useState(null);
+  const [sourceText, setSourceText] = useState(null);
   const visibleItems = showCompletedItems
     ? items
     : items.filter((item) => item.status !== STATUS_COMPLETED);
@@ -184,6 +240,7 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
           onClose={() => setEditingItem(null)}
         />
       )}
+      {sourceText && <SourceModal sourceText={sourceText} onClose={() => setSourceText(null)} />}
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.title}>Voxie</div>
@@ -231,7 +288,15 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Events</div>
                     {grp.events.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        onDelete={onDeleteItem}
+                        onStatusChange={onStatusChange}
+                        onEdit={setEditingItem}
+                        hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                        onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                      />
                     ))}
                   </>
                 )}
@@ -239,7 +304,15 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Tasks</div>
                     {grp.tasks.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        onDelete={onDeleteItem}
+                        onStatusChange={onStatusChange}
+                        onEdit={setEditingItem}
+                        hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                        onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                      />
                     ))}
                   </>
                 )}
@@ -247,7 +320,15 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Reminders</div>
                     {grp.reminders.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        onDelete={onDeleteItem}
+                        onStatusChange={onStatusChange}
+                        onEdit={setEditingItem}
+                        hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                        onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                      />
                     ))}
                   </>
                 )}
@@ -255,7 +336,15 @@ export default function Dashboard({ items, onRecordPress, onDeleteItem, onStatus
                   <>
                     <div className={styles.sec}>Notes</div>
                     {grp.notes.map((item) => (
-                      <ItemRow key={item.id} item={item} onDelete={onDeleteItem} onStatusChange={onStatusChange} onEdit={setEditingItem} />
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        onDelete={onDeleteItem}
+                        onStatusChange={onStatusChange}
+                        onEdit={setEditingItem}
+                        hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                        onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                      />
                     ))}
                   </>
                 )}

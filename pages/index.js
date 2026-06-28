@@ -131,6 +131,7 @@ export default function Home() {
           {activeTab === "today" && (
             <Dashboard
               items={items}
+              a2tResults={a2tResults}
               onRecordPress={() => setActiveTab("record")}
               onDeleteItem={deleteItem}
               onStatusChange={updateItemStatus}

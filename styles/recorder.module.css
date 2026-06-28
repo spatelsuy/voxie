@@ -189,13 +189,12 @@
 }
 
 .modalSub {
-  margin-top: 4px;
   font-size: 12px;
   color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .modalClose,
-.modalSecondaryBtn,
 .modalPrimaryBtn {
   border: none;
   border-radius: 10px;
@@ -205,10 +204,14 @@
   cursor: pointer;
 }
 
-.modalClose,
-.modalSecondaryBtn {
+.modalClose {
   background: #e2e8f0;
   color: var(--text-main);
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  flex: unset;
+  min-height: unset;
 }
 
 .modalPrimaryBtn {
@@ -217,7 +220,6 @@
 }
 
 .modalClose:disabled,
-.modalSecondaryBtn:disabled,
 .modalPrimaryBtn:disabled {
   opacity: 0.45;
   cursor: not-allowed;

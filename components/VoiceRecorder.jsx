@@ -295,12 +295,9 @@ export default function VoiceRecorder({
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <div>
-                <div className={styles.modalTitle}>Submit text</div>
-                <div className={styles.modalSub}>Type your tasks, reminders, events, or notes</div>
-              </div>
-              <button className={styles.modalClose} onClick={closeTextModal} disabled={isSubmittingText}>
-                Close
+              <div className={styles.modalSub}>Type your tasks, reminders, events, or notes</div>
+              <button className={styles.modalClose} onClick={closeTextModal} disabled={isSubmittingText} aria-label="Close text modal">
+                ✕
               </button>
             </div>
             <textarea
@@ -315,9 +312,6 @@ export default function VoiceRecorder({
             />
             {textError && <div className={styles.textError}>{textError}</div>}
             <div className={styles.modalActions}>
-              <button className={styles.modalSecondaryBtn} onClick={closeTextModal} disabled={isSubmittingText}>
-                Cancel
-              </button>
               <button
                 className={styles.modalPrimaryBtn}
                 onClick={handleTextSubmit}
