@@ -246,7 +246,7 @@ export default function Dashboard({ items, a2tResults, onRecordPress, onDeleteIt
       {sourceText && <SourceModal sourceText={sourceText} onClose={() => setSourceText(null)} />}
       {/* Header */}
       <div className={styles.header}>
-        <div className={styles.title}>Voxie</div>
+        <div className={styles.title}>Kahija</div>
         <div className={styles.date}>{todayStr()}</div>
       </div>
 
