@@ -4,6 +4,7 @@ const TABS = [
   { id: "today",    icon: "🗓", label: "Inbox"    },
   { id: "record",   icon: "🎙", label: "Record"   },
   { id: "history",  icon: "🕐", label: "History"  },
+  { id: "profile",  icon: "👤", label: "Profile"  },
   { id: "settings", icon: "⚙️", label: "Settings" },
 ];
 

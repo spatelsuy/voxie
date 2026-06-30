@@ -6,6 +6,7 @@ import Dashboard      from "../components/Dashboard";
 import OnboardingPanel from "../components/OnboardingPanel";
 import VoiceRecorder  from "../components/VoiceRecorder";
 import HistoryList    from "../components/HistoryList";
+import Profile        from "../components/Profile";
 import Settings       from "../components/Settings";
 import pageStyles     from "../styles/page.module.css";
 
@@ -30,13 +31,10 @@ export default function Home() {
     addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, updateItem, saveSetting,
   } = useOrganizerDB();
 
-  /* When a recording is saved, persist it then stay on Record tab
-     (auto-A2T will navigate to Today when done; manual stays in History) */
   async function handleRecordingSaved(rec) {
     await addRecording(rec);
   }
 
-  /* Auto-A2T — called by VoiceRecorder when recording qualifies */
   async function handleAutoA2T(rec) {
     setAutoA2TStatus("processing");
 
@@ -106,7 +104,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Voxie</title>
+        <title>Kahija</title>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -126,7 +124,6 @@ export default function Home() {
             />
           </div>
         )}
-        {/* ── Tab content ── */}
         <div className={pageStyles.content}>
           {activeTab === "today" && (
             <Dashboard
@@ -157,6 +154,9 @@ export default function Home() {
               onSaveA2T={saveA2TResult}
             />
           )}
+          {activeTab === "profile" && (
+            <Profile />
+          )}
           {activeTab === "settings" && (
             <Settings
               dbWarning={dbWarning}
@@ -168,7 +168,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* ── Bottom tab bar ── */}
         <TabBar active={activeTab} onChange={setActiveTab} />
       </div>
     </>

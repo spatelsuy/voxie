@@ -246,9 +246,10 @@ export default function VoiceRecorder({
 
   /* ── Save ──────────────────────────────────────── */
   async function saveRecording() {
-    const blob     = new Blob(audioChunksRef.current, { type: "audio/webm" });
-    const url      = URL.createObjectURL(blob);
+    const tempBlob     = new Blob(audioChunksRef.current, { type: "audio/webm" });
     const duration = secondsRef.current;
+    const blob = await fixWebmDuration(tempBlob, duration);
+    const url      = URL.createObjectURL(blob);
     const rec = {
       name: "Recording " + new Date(startTimeRef.current).toLocaleString("en-US", {
         month: "short", day: "2-digit", year: "numeric",
@@ -284,10 +285,13 @@ export default function VoiceRecorder({
   const isLikelyWebView = useMemo(() => {
     if (typeof navigator === "undefined") return false;
     const ua = navigator.userAgent || "";
+
+    const isAndroidWebView = /; wv\)/.test(ua);
     const isIosWebView = /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari/.test(ua);
-    const isAndroidWebView = /; wv\)/.test(ua) || /Version\/\d+\.\d+ Chrome\/\d+/.test(ua);
-    const hasWebViewTokens = /WebView|Line\//i.test(ua);
-    return isIosWebView || isAndroidWebView || hasWebViewTokens;
+    const inAppBrowserTokens =
+      /FBAN|FBAV|Instagram|Line\/|MicroMessenger|KAKAOTALK|TikTok|Snapchat|Twitter/i.test(ua);
+
+    return isAndroidWebView || isIosWebView || inAppBrowserTokens;
   }, []);
 
   /* Derive display status — auto-A2T feedback overrides local status when idle */
