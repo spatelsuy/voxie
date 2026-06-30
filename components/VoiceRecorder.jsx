@@ -209,6 +209,7 @@ export default function VoiceRecorder({
       setupWaveform(stream);
       mediaRecorderRef.current = createRecorder(stream);
       mediaRecorderRef.current.start();
+      alert("started recording");
       startTimer();
       startSilenceDetection();
       uiIntervalRef.current = setInterval(updateUI, 300);
@@ -246,9 +247,11 @@ export default function VoiceRecorder({
 
   /* ── Save ──────────────────────────────────────── */
   async function saveRecording() {
+    alert("Stopping recording");
     const tempBlob     = new Blob(audioChunksRef.current, { type: "audio/webm" });
     const duration = secondsRef.current;
     const blob = await fixWebmDuration(tempBlob, duration);
+    alert(`Recording stopped. Duration: ${duration}ms, size: ${blob.size} bytes`);
     const url      = URL.createObjectURL(blob);
     const rec = {
       name: "Recording " + new Date(startTimeRef.current).toLocaleString("en-US", {
