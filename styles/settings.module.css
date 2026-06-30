@@ -18,6 +18,17 @@
 /* scroll area */
 .scroll { flex: 1; overflow-y: auto; padding: 16px 16px 40px; }
 
+.webViewWarning {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* group */
 .group        { margin-bottom: 20px; }
 .groupLabel   {

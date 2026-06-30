@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "../styles/settings.module.css";
 
 export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange, onShowOnboarding }) {
@@ -6,6 +6,14 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
   const [nameInput, setNameInput] = useState(settings.userName);
 
   const totalMB = dbWarning?.text?.match(/([\d.]+\s*(MB|KB))/)?.[0] ?? "—";
+  const isLikelyWebView = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isIosWebView = /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari/.test(ua);
+    const isAndroidWebView = /; wv\)/.test(ua) || /Version\/\d+\.\d+ Chrome\/\d+/.test(ua);
+    const hasWebViewTokens = /WebView|Line\//i.test(ua);
+    return isIosWebView || isAndroidWebView || hasWebViewTokens;
+  }, []);
 
   useEffect(() => {
     setNameInput(settings.userName);
@@ -122,6 +130,12 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
             <span className={styles.rowValMuted}>{totalMB}</span>
           </div>
         </div>
+
+        {isLikelyWebView && (
+          <div className={styles.webViewWarning}>
+            Audio recording and transcription may not work correctly inside this WebView. Open Kahija in your browser for the best experience.
+          </div>
+        )}
 
         {/* About */}
         <div className={styles.group}>

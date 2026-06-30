@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import styles from "../styles/recorder.module.css";
 
 /* ─── Constants ───────────────────────────────────── */
@@ -281,6 +281,14 @@ export default function VoiceRecorder({
   }
 
   const isActiveRec = recState === "recording" || recState === "paused";
+  const isLikelyWebView = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isIosWebView = /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari/.test(ua);
+    const isAndroidWebView = /; wv\)/.test(ua) || /Version\/\d+\.\d+ Chrome\/\d+/.test(ua);
+    const hasWebViewTokens = /WebView|Line\//i.test(ua);
+    return isIosWebView || isAndroidWebView || hasWebViewTokens;
+  }, []);
 
   /* Derive display status — auto-A2T feedback overrides local status when idle */
   const displayStatus =
@@ -336,6 +344,12 @@ export default function VoiceRecorder({
         <button className={styles.moreBtn} onClick={openTextModal} disabled={isActiveRec || autoA2TStatus === "processing"} aria-label="Open text input">
           T
         </button>
+
+        {isLikelyWebView && (
+          <div className={styles.webViewWarning}>
+            Audio recording and transcription may not work correctly inside this WebView. Open Kahija in your browser for the best experience.
+          </div>
+        )}
 
         {/* Waveform */}
         <canvas ref={canvasRef} className={styles.canvas} />

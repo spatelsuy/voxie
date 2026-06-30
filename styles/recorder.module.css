@@ -50,6 +50,19 @@
   cursor: not-allowed;
 }
 
+.webViewWarning {
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* waveform canvas */
 .canvas {
   width: 100%;
