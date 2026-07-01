@@ -209,7 +209,7 @@ export default function VoiceRecorder({
       setupWaveform(stream);
       mediaRecorderRef.current = createRecorder(stream);
       mediaRecorderRef.current.start();
-      alert("started recording");
+      //alert("started recording");
       startTimer();
       startSilenceDetection();
       uiIntervalRef.current = setInterval(updateUI, 300);
