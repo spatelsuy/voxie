@@ -232,6 +232,7 @@ export default function Dashboard({ items, a2tResults, onRecordPress, onDeleteIt
   const taskCnt  = visibleItems.filter((i) => i.type === "task").length;
   const eventCnt = visibleItems.filter((i) => i.type === "event").length;
   const remCnt   = visibleItems.filter((i) => i.type === "reminder").length;
+  const hasSummaryCounts = taskCnt > 0 || eventCnt > 0 || remCnt > 0;
   const isEmpty  = total === 0;
 
   return (
@@ -253,21 +254,22 @@ export default function Dashboard({ items, a2tResults, onRecordPress, onDeleteIt
       {/* Scroll area */}
       <div className={styles.scroll}>
 
-        {/* Summary chips */}
-        <div className={styles.chips}>
-          <div className={`${styles.chip} ${styles.chipTask}`}>
-            <div className={styles.chipNum}>{taskCnt}</div>
-            <div className={styles.chipLbl}>Tasks</div>
+        {hasSummaryCounts && (
+          <div className={styles.chips}>
+            <div className={`${styles.chip} ${styles.chipTask}`}>
+              <div className={styles.chipNum}>{taskCnt}</div>
+              <div className={styles.chipLbl}>Tasks</div>
+            </div>
+            <div className={`${styles.chip} ${styles.chipEvent}`}>
+              <div className={styles.chipNum}>{eventCnt}</div>
+              <div className={styles.chipLbl}>Events</div>
+            </div>
+            <div className={`${styles.chip} ${styles.chipReminder}`}>
+              <div className={styles.chipNum}>{remCnt}</div>
+              <div className={styles.chipLbl}>Reminders</div>
+            </div>
           </div>
-          <div className={`${styles.chip} ${styles.chipEvent}`}>
-            <div className={styles.chipNum}>{eventCnt}</div>
-            <div className={styles.chipLbl}>Events</div>
-          </div>
-          <div className={`${styles.chip} ${styles.chipReminder}`}>
-            <div className={styles.chipNum}>{remCnt}</div>
-            <div className={styles.chipLbl}>Reminders</div>
-          </div>
-        </div>
+        )}
 
         {isEmpty ? (
           <div className={styles.emptyStateWrap}>

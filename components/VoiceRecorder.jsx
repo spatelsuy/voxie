@@ -247,43 +247,51 @@ export default function VoiceRecorder({
 
   /* ── Save ──────────────────────────────────────── */
   async function saveRecording() {
-    alert("Stopping recording");
-    const tempBlob     = new Blob(audioChunksRef.current, { type: "audio/webm" });
-    const duration = secondsRef.current;
-    const blob = await fixWebmDuration(tempBlob, duration);
-    alert(`Recording stopped. Duration: ${duration}ms, size: ${blob.size} bytes`);
-    const url      = URL.createObjectURL(blob);
-    const rec = {
-      name: "Recording " + new Date(startTimeRef.current).toLocaleString("en-US", {
-        month: "short", day: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
-      }),
-      id: Date.now(), blob, url,
-      size: blob.size, duration, createdAt: new Date(),
-      kind: "audio",
-    };
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    if (audioContextRef.current) audioContextRef.current.close();
+    try{
+      //alert(`Stopping recording. Chunks: ${audioChunksRef.current.length}`);
+      const tempBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      //alert(`tempBlob created. size: ${tempBlob.size} bytes`);
+      const duration = secondsRef.current;
+      const durationMS = duration*1000;
+      //const blob = await fixWebmDuration(tempBlob, durationMS);
+      const blob = tempBlob;
+      //alert(`Recording stopped. Duration: ${durationMS}ms, size: ${blob.size} bytes`);
+      const url = URL.createObjectURL(blob);
+      const rec = {
+        name: "Recording " + new Date(startTimeRef.current).toLocaleString("en-US", {
+          month: "short", day: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
+        }),
+        id: Date.now(), blob, url,
+        size: blob.size, duration, createdAt: new Date(),
+        kind: "audio",
+      };
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (audioContextRef.current) audioContextRef.current.close();
 
-    /* ── Smart Auto-A2T decision ──────────────────── */
-    const qualifies =
-      duration <= AUTO_A2T_MAX_SECONDS &&
-      blob.size <= AUTO_A2T_MAX_BYTES;
+      /* ── Smart Auto-A2T decision ──────────────────── */
+      const qualifies =
+        duration <= AUTO_A2T_MAX_SECONDS &&
+        blob.size <= AUTO_A2T_MAX_BYTES;
 
-    if (qualifies && onAutoA2T) {
-      setStatusText("Saved ✓ — processing…");
-      if (onRecordingSaved) await onRecordingSaved(rec);
-      onAutoA2T(rec); // fire-and-forget — parent handles status updates
-    } else {
-      setStatusText(
-        qualifies
-          ? "Saved ✓"
-          : `Saved ✓ — tap A2T in History to process`
-      );
-      if (onRecordingSaved) onRecordingSaved(rec);
+      if (qualifies && onAutoA2T) {
+        setStatusText("Saved ✓ — processing…");
+        if (onRecordingSaved) await onRecordingSaved(rec);
+        onAutoA2T(rec); // fire-and-forget — parent handles status updates
+      } else {
+        setStatusText(
+          qualifies
+            ? "Saved ✓"
+            : `Saved ✓ — tap A2T in History to process`
+        );
+        if (onRecordingSaved) onRecordingSaved(rec);
+      }
+    }catch (err){
+      alert(`ERROR: ${err.message}\n${err.stack}`);
     }
   }
 
+  
   const isActiveRec = recState === "recording" || recState === "paused";
   const isLikelyWebView = useMemo(() => {
     if (typeof navigator === "undefined") return false;
