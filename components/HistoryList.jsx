@@ -182,36 +182,28 @@ export default function HistoryList({
                     {taskCount     > 0 && <span className={`${styles.tag} ${styles.tagTask}`}>{taskCount} task{taskCount > 1 ? "s" : ""}</span>}
                     {eventCount    > 0 && <span className={`${styles.tag} ${styles.tagEvent}`}>{eventCount} event{eventCount > 1 ? "s" : ""}</span>}
                     {reminderCount > 0 && <span className={`${styles.tag} ${styles.tagReminder}`}>{reminderCount} reminder{reminderCount > 1 ? "s" : ""}</span>}
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                                      
+                    <div className={styles.btnGroup}>
+                      {!isTextEntry && (
+                        <button className={styles.btnPlay} onClick={() => downloadFile(r.url)}>
+                          Download
+                        </button>
+                      )}
+                      <button
+                        className={styles.btnA2t}
+                        onClick={() => hasResult ? togglePanel(r.id) : transcribeRec(r)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "…" : hasResult ? (isExpanded ? "Hide" : "View A2T") : isTextEntry ? "View text" : "A2T"}
+                      </button>
+                      <button className={styles.btnDelete} onClick={() => handleDeleteClick(r)}>
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 )}
-
-                {isTextEntry ? (
-                  <div className={styles.a2tPanel}>{r.text}</div>
-                ) : (
-                  <>
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <audio controls src={r.url} className={styles.audio} />
-                  </>
-                )}
-
-                <div className={styles.actions}>
-                  {!isTextEntry && (
-                    <button className={styles.btnPlay} onClick={() => downloadFile(r.url)}>
-                      Download
-                    </button>
-                  )}
-                  <button
-                    className={styles.btnA2t}
-                    onClick={() => hasResult ? togglePanel(r.id) : transcribeRec(r)}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "…" : hasResult ? (isExpanded ? "Hide" : "View A2T") : isTextEntry ? "View text" : "A2T"}
-                  </button>
-                  <button className={styles.btnDelete} onClick={() => handleDeleteClick(r)}>
-                    Delete
-                  </button>
-                </div>
-
+                {!isTextEntry && <audio controls src={r.url} className={styles.audioInline} />}  
                 {hasResult && isExpanded && (
                   <div className={styles.a2tPanel}>
                     <ResponseDisplay data={a2tResults[r.id]} />
