@@ -31,6 +31,7 @@ export default function Home() {
     addRecording, deleteRecording,
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
+    getSyncSnapshot, mergeSyncData,
   } = useOrganizerDB();
 
   async function handleRecordingSaved(rec) {
@@ -171,7 +172,7 @@ export default function Home() {
             />
           )}
           {activeTab === "profile" && (
-            <Profile />
+            <Profile onGetSyncData={getSyncSnapshot} onMergeSync={mergeSyncData} />
           )}
           {activeTab === "settings" && (
             <Settings
