@@ -28,6 +28,11 @@ function Item({ item }) {
       </div>
       {(item.time || item.is_deadline || item.related_to || item.context) && (
         <div className={styles.itemMeta}>
+          {item.recurrence && item.recurrence.is_recurring && (
+            <span className={`${styles.tag} ${styles.recurrence}`}>
+             &#9851; {item.recurrence.frequency} | {item.recurrence.day_of_week}
+            </span>
+          )}          
           {item.time && (
             <span className={`${styles.tag} ${styles.tagTime}`}>
               🕐 {item.time}
@@ -47,7 +52,7 @@ function Item({ item }) {
             <span className={`${styles.tag} ${styles.tagContext}`}>
               {item.context}
             </span>
-          )}
+          )}        
         </div>
       )}
     </div>

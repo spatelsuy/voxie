@@ -158,6 +158,7 @@
 .tagDeadline { background: #fff0ee; color: #c0392b; }
 .tagRelated  { background: #f0faf0; color: #276749; }
 .tagContext  { background: #f7f7f7; color: #6e6e73; }
+.recurrence  { background: #f7f7f7; color: #5050dc; }
 
 /* ─── Empty ──────────────────────────────────────── */
 .emptySection {

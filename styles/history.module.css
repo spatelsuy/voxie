@@ -66,7 +66,7 @@
 .tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
 
 /* right-aligned button group */
-.btnGroup { display: flex; gap: 6px; margin-left: auto; }
+.btnGroup { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
 .tag  {
   font-size: 11px;
   font-weight: 600;
@@ -87,13 +87,13 @@
 .actions { display: flex; gap: 8px; }
 
 .btnPlay {
-  width: 60px;
+  width: 40px;
   background: var(--primary);
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 9px 0;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   min-height: unset;
@@ -102,13 +102,13 @@
 .btnPlay:hover { background: var(--primary-hover); }
 
 .btnA2t {
-  width: 60px;
+  width: 40px;
   background: #7c5cd8;
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 9px 0;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   min-height: unset;
@@ -118,19 +118,66 @@
 .btnA2t:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
 .btnDelete {
-  width: 60px;
+  width: 40px;
   background: transparent;
   border: 1px solid #cbd5e1;
   color: var(--danger);
   border-radius: 8px;
   padding: 9px 0;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   min-height: unset;
   transition: background 0.2s;
 }
 .btnDelete:hover { background: #fee2e2; border-color: var(--danger); }
+
+/* A2T button — failed state */
+.btnA2tFailed {
+  background: #fff0ee;
+  color: #c0392b;
+  border: 1px solid #fecaca;
+}
+.btnA2tFailed:hover { background: #fee2e2; }
+
+/* status badges above button row */
+.statusPending {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+}
+.statusFailed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #c0392b;
+  background: #fff0ee;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+}
+.retryLink {
+  background: none;
+  border: none;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  flex: unset;
+  min-height: unset;
+}
+.retryLink:hover { color: #7f1d1d; }
 
 /* inline A2T panel */
 .a2tPanel {
