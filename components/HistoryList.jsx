@@ -18,7 +18,7 @@ function formatDuration(sec) {
 const API_URL = "/api/transcribe";
 
 /* ─── Confirmation dialog ─────────────────────────── */
-function ConfirmDialog({ recording, itemCount, onYes, onNo }) {
+function ConfirmDialog({ recording, itemCount, onYes, onNo, onCancel }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.dialog}>
@@ -40,6 +40,9 @@ function ConfirmDialog({ recording, itemCount, onYes, onNo }) {
               Also delete the {itemCount} item{itemCount > 1 ? "s" : ""} from your Organizer?
             </div>
             <div className={styles.dialogActions}>
+              <button className={styles.dialogBtnSecondary} onClick={onCancel}>
+                Cancel
+              </button>
               <button className={styles.dialogBtnSecondary} onClick={onNo}>
                 Keep items
               </button>
@@ -50,7 +53,7 @@ function ConfirmDialog({ recording, itemCount, onYes, onNo }) {
           </>
         ) : (
           <div className={styles.dialogActions}>
-            <button className={styles.dialogBtnSecondary} onClick={onNo}>
+            <button className={styles.dialogBtnSecondary} onClick={onCancel}>
               Cancel
             </button>
             <button className={styles.dialogBtnDanger} onClick={onYes}>
@@ -65,8 +68,8 @@ function ConfirmDialog({ recording, itemCount, onYes, onNo }) {
 
 /* ─── Component ───────────────────────────────────── */
 export default function HistoryList({
-  recordings, a2tResults, items, dbWarning,
-  onDelete, onSaveA2T,
+  recordings, a2tResults, a2tStatuses, items, dbWarning,
+  onDelete, onSaveA2T, onMarkFailed,
 }) {
   const [expandedA2T, setExpandedA2T] = useState({});
   const [a2tLoading,  setA2tLoading]  = useState({});
@@ -119,14 +122,18 @@ export default function HistoryList({
 
   function handleConfirmYes() {
     if (!confirmFor) return;
-    onDelete(confirmFor.recording.id, true);
+    onDelete(confirmFor.recording.id, true);   // delete recording + organiser items
     setConfirmFor(null);
   }
 
   function handleConfirmNo() {
     if (!confirmFor) return;
-    onDelete(confirmFor.recording.id, false);
+    onDelete(confirmFor.recording.id, false);  // delete recording, keep organiser items
     setConfirmFor(null);
+  }
+
+  function handleConfirmCancel() {
+    setConfirmFor(null);                       // dismiss — delete nothing
   }
 
   const warnClass =
@@ -142,6 +149,7 @@ export default function HistoryList({
           itemCount={confirmFor.itemCount}
           onYes={handleConfirmYes}
           onNo={handleConfirmNo}
+          onCancel={handleConfirmCancel}
         />
       )}
 
@@ -159,10 +167,13 @@ export default function HistoryList({
           <div className={styles.empty}>No recordings yet. Tap Record to start.</div>
         ) : (
           [...recordings].reverse().map((r) => {
-            const hasResult  = !!a2tResults[r.id];
-            const isExpanded = !!expandedA2T[r.id];
-            const isLoading  = !!a2tLoading[r.id];
-            const a          = a2tResults[r.id]?.analysis;
+            const hasResult   = !!a2tResults[r.id];
+            const isExpanded  = !!expandedA2T[r.id];
+            const isLoading   = !!a2tLoading[r.id];
+            const a2tStatus   = a2tStatuses?.[r.id]; // "pending"|"done"|"failed"|undefined
+            const isPending   = a2tStatus === "pending";
+            const isFailed    = a2tStatus === "failed";
+            const a           = a2tResults[r.id]?.analysis;
             const taskCount     = (a?.tasks     || []).length;
             const eventCount    = (a?.events    || []).length;
             const reminderCount = (a?.reminders || []).length;
@@ -177,33 +188,56 @@ export default function HistoryList({
                     : `${formatSize(r.size)} • ${formatDuration(r.duration)} • ${r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                 </div>
 
+                {/* Tags — only when A2T result exists */}
                 {hasResult && (
                   <div className={styles.tags}>
                     {taskCount     > 0 && <span className={`${styles.tag} ${styles.tagTask}`}>{taskCount} task{taskCount > 1 ? "s" : ""}</span>}
                     {eventCount    > 0 && <span className={`${styles.tag} ${styles.tagEvent}`}>{eventCount} event{eventCount > 1 ? "s" : ""}</span>}
                     {reminderCount > 0 && <span className={`${styles.tag} ${styles.tagReminder}`}>{reminderCount} reminder{reminderCount > 1 ? "s" : ""}</span>}
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                                      
-                    <div className={styles.btnGroup}>
-                      {!isTextEntry && (
-                        <button className={styles.btnPlay} onClick={() => downloadFile(r.url)}>
-                          Download
-                        </button>
-                      )}
-                      <button
-                        className={styles.btnA2t}
-                        onClick={() => hasResult ? togglePanel(r.id) : transcribeRec(r)}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "…" : hasResult ? (isExpanded ? "Hide" : "View A2T") : isTextEntry ? "View text" : "A2T"}
-                      </button>
-                      <button className={styles.btnDelete} onClick={() => handleDeleteClick(r)}>
-                        Delete
-                      </button>
-                    </div>
                   </div>
                 )}
-                {!isTextEntry && <audio controls src={r.url} className={styles.audioInline} />}  
+
+                {/* Status badge for pending/failed — shown above buttons */}
+                {(isPending || isFailed) && !hasResult && (
+                  <div className={isFailed ? styles.statusFailed : styles.statusPending}>
+                    {isPending ? "⏳ Analysing — please wait…" : "⚠️ Analysis failed"}
+                    {isFailed && (
+                      <button
+                        className={styles.retryLink}
+                        onClick={() => { if (onMarkFailed) onMarkFailed(r.id); transcribeRec(r); }}
+                      >
+                        Retry
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Buttons + audio — always visible */}
+                <div className={styles.btnGroup}>
+                  {!isTextEntry && (
+                    <button className={styles.btnPlay} onClick={() => downloadFile(r.url)}>
+                      Download
+                    </button>
+                  )}
+                  <button
+                    className={`${styles.btnA2t} ${isFailed && !hasResult ? styles.btnA2tFailed : ""}`}
+                    onClick={() => hasResult ? togglePanel(r.id) : transcribeRec(r)}
+                    disabled={isLoading || isPending}
+                  >
+                    {isLoading || isPending
+                      ? "…"
+                      : hasResult
+                        ? (isExpanded ? "Hide" : "View A2T")
+                        : isFailed
+                          ? "Retry"
+                          : isTextEntry ? "View text" : "A2T"}
+                  </button>
+                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                  {!isTextEntry && <audio controls src={r.url} className={styles.audioInline} />}
+                  <button className={styles.btnDelete} onClick={() => handleDeleteClick(r)}>
+                    Delete
+                  </button>
+                </div>
                 {hasResult && isExpanded && (
                   <div className={styles.a2tPanel}>
                     <ResponseDisplay data={a2tResults[r.id]} />

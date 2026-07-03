@@ -72,10 +72,11 @@ function dbLoadAllRecordings(db) {
 }
 
 /* ── a2t_results ── */
-export function dbSaveA2T(db, recordingId, jsonData) {
+/** Write a full a2t record: status = "pending" | "done" | "failed", data = null or result */
+export function dbSaveA2T(db, recordingId, status, jsonData = null) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_A2T, "readwrite");
-    tx.objectStore(STORE_A2T).put({ recordingId, data: jsonData });
+    tx.objectStore(STORE_A2T).put({ recordingId, status, data: jsonData });
     tx.oncomplete = resolve;
     tx.onerror    = (e) => reject(e.target.error);
   });
@@ -173,41 +174,47 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
 
   (a.tasks || []).forEach((t, i) => items.push({
     ...base,
-    id:       `${sourceRecordingId}_task_${i}`,
-    type:     "task",
-    title:    t.title,
-    priority: t.priority || "low",
-    time:     t.time     || null,
-    context:  t.context  || null,
-    related:  t.related_to || null,
-    isDeadline: !!t.is_deadline,
-    status:   "inprogress",
+    id:            `${sourceRecordingId}_task_${i}`,
+    type:          "task",
+    title:         t.title,
+    priority:      t.priority     || "low",
+    time:          t.time         || null,
+    context:       t.context      || null,
+    related:       t.related_to   || null,
+    sourceSegment: t.source_segment || null,
+    isDeadline:    !!t.is_deadline,
+    recurrence:    t.recurrence   || null,
+    status:        "inprogress",
   }));
 
   (a.events || []).forEach((t, i) => items.push({
     ...base,
-    id:       `${sourceRecordingId}_event_${i}`,
-    type:     "event",
-    title:    t.title,
-    priority: t.priority || "low",
-    time:     t.time     || null,
-    context:  t.context  || null,
-    related:  t.related_to || null,
-    isDeadline: false,
-    status:   "inprogress",
+    id:            `${sourceRecordingId}_event_${i}`,
+    type:          "event",
+    title:         t.title,
+    priority:      t.priority     || "low",
+    time:          t.time         || null,
+    context:       t.context      || null,
+    related:       t.related_to   || null,
+    sourceSegment: t.source_segment || null,
+    isDeadline:    false,
+    recurrence:    t.recurrence   || null,
+    status:        "inprogress",
   }));
 
   (a.reminders || []).forEach((t, i) => items.push({
     ...base,
-    id:       `${sourceRecordingId}_reminder_${i}`,
-    type:     "reminder",
-    title:    t.title,
-    priority: t.priority || "low",
-    time:     t.time     || null,
-    context:  t.context  || null,
-    related:  t.related_to || null,
-    isDeadline: false,
-    status:   "inprogress",
+    id:            `${sourceRecordingId}_reminder_${i}`,
+    type:          "reminder",
+    title:         t.title,
+    priority:      t.priority     || "low",
+    time:          t.time         || null,
+    context:       t.context      || null,
+    related:       t.related_to   || null,
+    sourceSegment: t.source_segment || null,
+    isDeadline:    false,
+    recurrence:    t.recurrence   || null,
+    status:        "inprogress",
   }));
 
   (a.notes || []).forEach((t, i) => items.push({
@@ -230,8 +237,9 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
 export default function useOrganizerDB() {
   const dbRef = useRef(null);
 
-  const [recordings, setRecordings] = useState([]);
-  const [a2tResults, setA2tResults] = useState({}); // { [recordingId]: jsonData }
+  const [recordings,  setRecordings]  = useState([]);
+  const [a2tResults,  setA2tResults]  = useState({}); // { [recordingId]: jsonData }
+  const [a2tStatuses, setA2tStatuses] = useState({}); // { [recordingId]: "pending"|"done"|"failed" }
   const [items,      setItems]      = useState([]); // DB-2 flat items
   const [settings,   setSettings]   = useState({
     showCompletedItems: false,
@@ -287,12 +295,17 @@ export default function useOrganizerDB() {
           text: e.text || null,
         }));
 
-        const a2tMap = {};
-        savedA2T.forEach((r) => { a2tMap[r.recordingId] = r.data; });
+        const a2tMap      = {};
+        const a2tStatusMap = {};
+        savedA2T.forEach((r) => {
+          if (r.data)   a2tMap[r.recordingId]       = r.data;
+          if (r.status) a2tStatusMap[r.recordingId] = r.status;
+        });
 
         if (mounted) {
           setRecordings(restored);
           setA2tResults(a2tMap);
+          setA2tStatuses(a2tStatusMap);
           setItems(savedItems.map((item) => ({
             ...item,
             status: item.status || "inprogress",
@@ -337,7 +350,8 @@ export default function useOrganizerDB() {
       computeDBWarning(next);
       return next;
     });
-    setA2tResults((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setA2tResults( (prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setA2tStatuses((prev) => { const n = { ...prev }; delete n[id]; return n; });
 
     if (alsoDeleteItems) {
       setItems((prev) => prev.filter((item) => item.sourceRecordingId !== id));
@@ -353,9 +367,28 @@ export default function useOrganizerDB() {
     }
   }, [computeDBWarning]);
 
+  /* Mark a recording's A2T as pending (write to DB immediately) — Tier 2 */
+  const markA2TPending = useCallback(async (recordingId) => {
+    setA2tStatuses((prev) => ({ ...prev, [recordingId]: "pending" }));
+    if (dbRef.current) {
+      try { await dbSaveA2T(dbRef.current, recordingId, "pending", null); }
+      catch (err) { console.error("Failed to mark A2T pending:", err); }
+    }
+  }, []);
+
+  /* Mark a recording's A2T as failed — Tier 1 + 2 */
+  const markA2TFailed = useCallback(async (recordingId) => {
+    setA2tStatuses((prev) => ({ ...prev, [recordingId]: "failed" }));
+    if (dbRef.current) {
+      try { await dbSaveA2T(dbRef.current, recordingId, "failed", null); }
+      catch (err) { console.error("Failed to mark A2T failed:", err); }
+    }
+  }, []);
+
   /* Save raw A2T result + extracted items into both stores */
   const saveA2TResult = useCallback(async (recordingId, data, recordingDate) => {
-    setA2tResults((prev) => ({ ...prev, [recordingId]: data }));
+    setA2tResults( (prev) => ({ ...prev, [recordingId]: data }));
+    setA2tStatuses((prev) => ({ ...prev, [recordingId]: "done"  }));
 
     let mergedItems = [];
     setItems((prev) => {
@@ -387,7 +420,7 @@ export default function useOrganizerDB() {
 
     if (dbRef.current) {
       try {
-        await dbSaveA2T(dbRef.current, recordingId, data);
+        await dbSaveA2T(dbRef.current, recordingId, "done", data);
         if (mergedItems.length > 0)
           await dbSaveItems(dbRef.current, mergedItems);
       } catch (err) { console.error("Failed to save A2T result:", err); }
@@ -443,7 +476,9 @@ export default function useOrganizerDB() {
 
   return {
     dbRef,
-    recordings, a2tResults, items, settings, dbWarning,
-    addRecording, deleteRecording, saveA2TResult, deleteItem, updateItemStatus, updateItem, saveSetting,
+    recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
+    addRecording, deleteRecording,
+    markA2TPending, markA2TFailed, saveA2TResult,
+    deleteItem, updateItemStatus, updateItem, saveSetting,
   };
 }
