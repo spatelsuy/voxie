@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useOrganizerDB from "../hooks/useOrganizerDB";
 import TabBar         from "../components/TabBar";
 import Dashboard      from "../components/Dashboard";
@@ -22,7 +22,15 @@ function getFormattedDate() {
 }
 
 export default function Home() {
-  const [activeTab,       setActiveTab]       = useState("record"); // default: record screen
+  const [activeTab, setActiveTab] = useState("record");
+
+  // Read ?tab= from URL after mount — avoids SSR/hydration mismatch
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    if (["record","today","history","profile","settings"].includes(p)) {
+      setActiveTab(p);
+    }
+  }, []);
   const [autoA2TStatus,   setAutoA2TStatus]   = useState(null); // null | "processing" | "done" | "error"
   const [showOnboarding,  setShowOnboarding]  = useState(false);
 
@@ -172,7 +180,12 @@ export default function Home() {
             />
           )}
           {activeTab === "profile" && (
-            <Profile onGetSyncData={getSyncSnapshot} onMergeSync={mergeSyncData} />
+            <Profile
+              onGetSyncData={getSyncSnapshot}
+              onMergeSync={mergeSyncData}
+              storageBackend={settings.storageBackend}
+              onSaveSetting={saveSetting}
+            />
           )}
           {activeTab === "settings" && (
             <Settings

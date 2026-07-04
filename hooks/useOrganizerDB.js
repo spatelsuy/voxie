@@ -259,6 +259,9 @@ export default function useOrganizerDB() {
     autoA2T: false,
     silenceSec: 10,
     userName: "SunilK",
+    dbCreatedAt:     "",       // set once on first boot, never overwritten
+    exportedAt:      "",       // updated on every sync/export
+    storageBackend:  "drive",  // "drive" | "supabase"
   });
   const [dbWarning,  setDbWarning]  = useState(null);
 
@@ -314,6 +317,19 @@ export default function useOrganizerDB() {
           if (r.status) a2tStatusMap[r.recordingId] = r.status;
         });
 
+        // Initialise dbCreatedAt once — write to DB only if it doesn't exist yet
+        const settingsMap = Object.fromEntries(savedSettings.map((e) => [e.key, e.value]));
+        if (!settingsMap.dbCreatedAt) {
+          const firstBoot = new Date().toISOString();
+          settingsMap.dbCreatedAt = firstBoot;
+          await dbSaveSetting(db, "dbCreatedAt", firstBoot);
+        }
+        // Ensure exportedAt key exists in DB (blank string if never synced)
+        if (!("exportedAt" in settingsMap)) {
+          settingsMap.exportedAt = "";
+          await dbSaveSetting(db, "exportedAt", "");
+        }
+
         if (mounted) {
           setRecordings(restored);
           setA2tResults(a2tMap);
@@ -324,10 +340,7 @@ export default function useOrganizerDB() {
             createdAt: item.createdAt || null,
             updatedAt: item.updatedAt || null,
           })));
-          setSettings((prev) => ({
-            ...prev,
-            ...Object.fromEntries(savedSettings.map((entry) => [entry.key, entry.value])),
-          }));
+          setSettings((prev) => ({ ...prev, ...settingsMap }));
           computeDBWarning(restored);
         }
       } catch (err) {
@@ -444,12 +457,19 @@ export default function useOrganizerDB() {
     }
   }, []);
 
-  /* Delete a single item from DB-2 */
+  /* Soft-delete a single item from DB-2 — marks status "deleted" so sync can propagate it */
   const deleteItem = useCallback(async (itemId) => {
-    setItems((prev) => prev.filter((i) => i.id !== itemId));
+    const now = new Date().toISOString();
+    setItems((prev) => prev.map((i) =>
+      i.id === itemId ? { ...i, status: "deleted", updatedAt: now } : i
+    ));
     if (dbRef.current) {
-      try { await dbDeleteItem(dbRef.current, itemId); }
-      catch (err) { console.error("Failed to delete item:", err); }
+      try {
+        const all = await dbLoadAllItems(dbRef.current);
+        const item = all.find((i) => i.id === itemId);
+        if (item) await dbSaveItems(dbRef.current, [{ ...item, status: "deleted", updatedAt: now }]);
+      }
+      catch (err) { console.error("Failed to soft-delete item:", err); }
     }
   }, []);
 
@@ -491,7 +511,8 @@ export default function useOrganizerDB() {
     }
   }, []);
 
-  /** Return a plain JSON-serialisable snapshot of the three sync-able stores */
+  /** Return a plain JSON-serialisable snapshot of the three sync-able stores.
+   *  Also stamps exportedAt in the settings store so it persists. */
   const getSyncSnapshot = useCallback(async () => {
     if (!dbRef.current) return null;
     const [savedA2T, savedItems, savedSettings] = await Promise.all([
@@ -499,11 +520,20 @@ export default function useOrganizerDB() {
       dbLoadAllItems(dbRef.current),
       dbLoadAllSettings(dbRef.current),
     ]);
+    const settingsMap = Object.fromEntries(savedSettings.map((s) => [s.key, s.value]));
+    const now = new Date().toISOString();
+
+    // Stamp exportedAt — persist to DB and update in-memory settings
+    settingsMap.exportedAt = now;
+    await dbSaveSetting(dbRef.current, "exportedAt", now);
+    setSettings((prev) => ({ ...prev, exportedAt: now }));
+
     return {
-      exportedAt:      new Date().toISOString(),
+      dbCreatedAt:     settingsMap.dbCreatedAt || "",
+      exportedAt:      now,
       a2t_results:     savedA2T,
       organizer_items: savedItems,
-      settings:        Object.fromEntries(savedSettings.map((s) => [s.key, s.value])),
+      settings:        settingsMap,
     };
   }, []);
 
@@ -523,9 +553,16 @@ export default function useOrganizerDB() {
     const toWrite = [];
     remoteItems.forEach((remoteItem) => {
       const local = localById.get(remoteItem.id);
-      const remoteTs = remoteItem.updatedAt ? new Date(remoteItem.updatedAt).getTime() : 0;
-      const localTs  = local?.updatedAt     ? new Date(local.updatedAt).getTime()     : 0;
-      if (!local || remoteTs > localTs) {
+      if (!local) {
+        // Item doesn't exist locally at all — always take remote
+        toWrite.push(remoteItem);
+        itemsUpdated++;
+        return;
+      }
+      // Use updatedAt, fall back to createdAt, fall back to 0
+      const remoteTs = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+      const localTs  = new Date(local.updatedAt      || local.createdAt      || 0).getTime();
+      if (remoteTs > localTs) {
         toWrite.push(remoteItem);
         itemsUpdated++;
       }

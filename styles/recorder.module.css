@@ -4,8 +4,17 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #f2f2f4; /* deep navy — immersive recording canvas */
+  background: #ffffff; /* deep navy — immersive recording canvas */
 }
+
+/* header */
+.header {
+  padding: 18px 20px 12px;
+  background: #ffffff;
+  border-bottom: 0px solid var(--border);
+}
+.title { font-size: 20px; font-weight: 700; color: var(--text-main); }
+.sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
 /* webview warning — floats above stage */
 .webViewWarning {
@@ -230,9 +239,9 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.07);
+  background: #222222;
   border: 1px solid rgba(255,255,255,0.15);
-  color: #94a3b8;
+  color: #dddddd;
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
@@ -244,7 +253,7 @@
   padding: 0;
   transition: background 0.2s, color 0.2s;
 }
-.textBtn:hover   { background: rgba(255,255,255,0.13); color: #e2e8f0; }
+.textBtn:hover   { background: rgba(111,111,111,111); color: #ffffff; }
 .textBtn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
 
 /* ── Text input modal ── */

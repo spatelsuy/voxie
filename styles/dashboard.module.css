@@ -5,14 +5,14 @@
   flex-direction: column;
   height: 100%;
   position: relative;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
 /* header */
 .header {
   padding: 18px 20px 12px;
   background: #ffffff;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0px solid var(--border);
 }
 .title { font-size: 20px; font-weight: 700; color: var(--text-main); }
 .date  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }

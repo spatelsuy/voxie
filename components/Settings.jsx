@@ -142,14 +142,9 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
           <div className={styles.groupLabel}>About</div>
           <button className={styles.rowButton} onClick={onShowOnboarding}>
             <span className={styles.rowIcon}>ℹ️</span>
-            <span className={styles.rowLabel}>How Voxie works</span>
+            <span className={styles.rowLabel}>How Kahija (v1.0) works</span>
             <span className={styles.rowValMuted}>›</span>
           </button>
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>ℹ️</span>
-            <span className={styles.rowLabel}>My Organizer</span>
-            <span className={styles.rowValMuted}>v1.0</span>
-          </div>
         </div>
 
       </div>

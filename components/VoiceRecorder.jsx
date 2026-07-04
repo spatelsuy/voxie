@@ -357,7 +357,7 @@ export default function VoiceRecorder({
     circleState === "recording"  ? statusText || "Recording…"                                      :
     circleState === "paused"     ? statusText                                                       :
     circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : statusText || "Processing…") :
-    autoA2TStatus === "done"     ? "Done — check Due Date"                                         :
+    autoA2TStatus === "done"     ? "Done — check Inbox"                                         :
     autoA2TStatus === "error"    ? "Failed — try manually"                                         :
     idleMsg.label;
 
@@ -375,6 +375,7 @@ export default function VoiceRecorder({
 
   return (
     <div className={styles.wrap}>
+
       {/* Text input modal */}
       {isTextModalOpen && (
         <div className={styles.modalOverlay}>
