@@ -39,7 +39,7 @@ export const authOptions = {
         params: {
           // drive.appdata — hidden app folder, no access to user's files.
           // Does not require Google verification review.
-          scope: "openid email profile https://www.googleapis.com/auth/drive.appdata",
+          scope: "openid email profile",
           access_type: "offline",
           response_type: "code",
         },
