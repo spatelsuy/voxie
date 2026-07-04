@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
 .header {
   padding: 18px 20px 12px;
   background: #ffffff;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0px solid var(--border);
 }
 
 .title {
@@ -55,6 +55,56 @@
   color: var(--text-muted);
 }
 
+.sectionLabel {
+  margin-top: 18px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.backendToggle {
+  display: flex;
+  gap: 8px;
+}
+
+.backendBtn {
+  flex: 1;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f7f8fa;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.backendBtnActive {
+  background: #1f2328;
+  color: #ffffff;
+  border-color: #1f2328;
+}
+
+.backendNote {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.tokenError {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #c2410c;
+  line-height: 1.4;
+}
+
 .googleBtn {
   width: 100%;
   margin-top: 18px;
@@ -66,4 +116,133 @@
   font-weight: 700;
   padding: 12px 14px;
   cursor: pointer;
+}
+
+.syncBtn {
+  width: 100%;
+  margin-top: 10px;
+  border: none;
+  border-radius: 12px;
+  background: #3b82d4;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.syncBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.syncBtnDone {
+  background: #22c55e;
+}
+.syncBtnError {
+  background: #ef4444;
+}
+
+.clearDriveBtn {
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  background: #fff5f5;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.clearDriveBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.clearDriveBtnDone {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #16a34a;
+}
+.clearDriveBtnError {
+  background: #fff5f5;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.syncJsonBtn {
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f7f8fa;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.syncJsonBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ─── Sync JSON modal ─────────────────────────────── */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal {
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  background: #ffffff;
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modalTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+}
+
+.jsonPre {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 16px 18px;
+  font-size: 11px;
+  line-height: 1.5;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: var(--text-main);
+  background: #f7f8fa;
+  white-space: pre;
+  word-break: break-all;
 }

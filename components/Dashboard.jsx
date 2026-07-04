@@ -315,9 +315,12 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
         aria-label={isCompleted ? "Mark as in progress" : "Mark as completed"}
         title={isCompleted ? "Mark as in progress" : "Mark as completed"}
       />
-      <button
+      <div
         className={styles.rowMain}
         onClick={() => setIsExpanded((p) => !p)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" || e.key === " " ? setIsExpanded((p) => !p) : null}
         aria-expanded={isExpanded}
         title={isExpanded ? "Collapse" : "Expand"}
       >
@@ -351,7 +354,7 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
                   <span className={`${styles.rowMetaTag} ${styles.rowMetaDeadline}`}>Deadline</span>
                 )}
                 {hasSource && (
-                  <button className={`${styles.rowMetaTag} ${styles.rowSourceBtn}`} onClick={onViewSource}>
+                  <button className={`${styles.rowMetaTag} ${styles.rowSourceBtn}`} onClick={(e) => { e.stopPropagation(); onViewSource(); }}>
                     Open source
                   </button>
                 )}
@@ -362,7 +365,7 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
             )}
           </div>
         )}
-      </button>
+      </div>
       <button className={styles.rowEdit}   onClick={() => onEdit(item)}      aria-label="Edit item" title="Edit">•••</button>
       <button className={styles.rowDelete} onClick={() => onDelete(item.id)} aria-label="Delete item" title="Delete">✕</button>
     </div>
@@ -409,9 +412,9 @@ export default function Dashboard({
   const [sourceText,  setSourceText]  = useState(null);
   const [viewMode,    setViewMode]    = useState("scheduled"); // "inbox" | "scheduled"
 
-  const visibleItems = showCompletedItems
-    ? items
-    : items.filter((i) => i.status !== STATUS_COMPLETED);
+  const visibleItems = items
+    .filter((i) => i.status !== "deleted")
+    .filter((i) => showCompletedItems ? true : i.status !== STATUS_COMPLETED);
 
   /* ── counts (always over all visible items) ── */
   const taskCnt  = visibleItems.filter((i) => i.type === "task").length;

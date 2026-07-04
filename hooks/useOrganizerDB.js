@@ -73,10 +73,21 @@ function dbLoadAllRecordings(db) {
 
 /* ── a2t_results ── */
 /** Write a full a2t record: status = "pending" | "done" | "failed", data = null or result */
-export function dbSaveA2T(db, recordingId, status, jsonData = null) {
+export function dbSaveA2T(db, recordingId, status, jsonData = null, createdAt = null) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_A2T, "readwrite");
-    tx.objectStore(STORE_A2T).put({ recordingId, status, data: jsonData });
+    const tx    = db.transaction(STORE_A2T, "readwrite");
+    const store = tx.objectStore(STORE_A2T);
+    // Preserve existing createdAt if record already exists
+    const getReq = store.get(recordingId);
+    getReq.onsuccess = (e) => {
+      const existing = e.target.result;
+      store.put({
+        recordingId,
+        status,
+        data:      jsonData,
+        createdAt: existing?.createdAt || createdAt || new Date().toISOString(),
+      });
+    };
     tx.oncomplete = resolve;
     tx.onerror    = (e) => reject(e.target.error);
   });
@@ -170,7 +181,8 @@ export function extractItems(a2tData, sourceRecordingId, recordingDate) {
   const a     = a2tData?.analysis;
   if (!a) return [];
   const items = [];
-  const base  = { sourceRecordingId, recordingDate, isEdited: false };
+  const now   = new Date().toISOString();
+  const base  = { sourceRecordingId, recordingDate, isEdited: false, createdAt: now, updatedAt: now };
 
   (a.tasks || []).forEach((t, i) => items.push({
     ...base,
@@ -247,6 +259,9 @@ export default function useOrganizerDB() {
     autoA2T: false,
     silenceSec: 10,
     userName: "SunilK",
+    dbCreatedAt:     "",       // set once on first boot, never overwritten
+    exportedAt:      "",       // updated on every sync/export
+    storageBackend:  "drive",  // "drive" | "supabase"
   });
   const [dbWarning,  setDbWarning]  = useState(null);
 
@@ -302,18 +317,30 @@ export default function useOrganizerDB() {
           if (r.status) a2tStatusMap[r.recordingId] = r.status;
         });
 
+        // Initialise dbCreatedAt once — write to DB only if it doesn't exist yet
+        const settingsMap = Object.fromEntries(savedSettings.map((e) => [e.key, e.value]));
+        if (!settingsMap.dbCreatedAt) {
+          const firstBoot = new Date().toISOString();
+          settingsMap.dbCreatedAt = firstBoot;
+          await dbSaveSetting(db, "dbCreatedAt", firstBoot);
+        }
+        // Ensure exportedAt key exists in DB (blank string if never synced)
+        if (!("exportedAt" in settingsMap)) {
+          settingsMap.exportedAt = "";
+          await dbSaveSetting(db, "exportedAt", "");
+        }
+
         if (mounted) {
           setRecordings(restored);
           setA2tResults(a2tMap);
           setA2tStatuses(a2tStatusMap);
           setItems(savedItems.map((item) => ({
             ...item,
-            status: item.status || "inprogress",
+            status:    item.status    || "inprogress",
+            createdAt: item.createdAt || null,
+            updatedAt: item.updatedAt || null,
           })));
-          setSettings((prev) => ({
-            ...prev,
-            ...Object.fromEntries(savedSettings.map((entry) => [entry.key, entry.value])),
-          }));
+          setSettings((prev) => ({ ...prev, ...settingsMap }));
           computeDBWarning(restored);
         }
       } catch (err) {
@@ -405,12 +432,15 @@ export default function useOrganizerDB() {
             ...existingItem,
             sourceRecordingId: item.sourceRecordingId,
             recordingDate: item.recordingDate,
+            createdAt: existingItem.createdAt || item.createdAt,
+            updatedAt: item.updatedAt,
           };
         }
         return {
           ...item,
-          status: existingItem?.status || item.status,
-          isEdited: existingItem?.isEdited || item.isEdited,
+          status:    existingItem?.status    || item.status,
+          isEdited:  existingItem?.isEdited  || item.isEdited,
+          createdAt: existingItem?.createdAt || item.createdAt,
         };
       });
       const filtered = prev.filter((i) => i.sourceRecordingId !== recordingId);
@@ -427,12 +457,19 @@ export default function useOrganizerDB() {
     }
   }, []);
 
-  /* Delete a single item from DB-2 */
+  /* Soft-delete a single item from DB-2 — marks status "deleted" so sync can propagate it */
   const deleteItem = useCallback(async (itemId) => {
-    setItems((prev) => prev.filter((i) => i.id !== itemId));
+    const now = new Date().toISOString();
+    setItems((prev) => prev.map((i) =>
+      i.id === itemId ? { ...i, status: "deleted", updatedAt: now } : i
+    ));
     if (dbRef.current) {
-      try { await dbDeleteItem(dbRef.current, itemId); }
-      catch (err) { console.error("Failed to delete item:", err); }
+      try {
+        const all = await dbLoadAllItems(dbRef.current);
+        const item = all.find((i) => i.id === itemId);
+        if (item) await dbSaveItems(dbRef.current, [{ ...item, status: "deleted", updatedAt: now }]);
+      }
+      catch (err) { console.error("Failed to soft-delete item:", err); }
     }
   }, []);
 
@@ -440,7 +477,7 @@ export default function useOrganizerDB() {
     const currentItem = items.find((item) => item.id === itemId);
     if (!currentItem) return;
 
-    const updatedItem = { ...currentItem, status };
+    const updatedItem = { ...currentItem, status, updatedAt: new Date().toISOString() };
     setItems((prev) => prev.map((item) => (
       item.id === itemId ? updatedItem : item
     )));
@@ -455,7 +492,7 @@ export default function useOrganizerDB() {
     const currentItem = items.find((item) => item.id === itemId);
     if (!currentItem) return;
 
-    const updatedItem = { ...currentItem, ...changes, isEdited: true };
+    const updatedItem = { ...currentItem, ...changes, isEdited: true, updatedAt: new Date().toISOString() };
     setItems((prev) => prev.map((item) => (
       item.id === itemId ? updatedItem : item
     )));
@@ -474,11 +511,116 @@ export default function useOrganizerDB() {
     }
   }, []);
 
+  /** Return a plain JSON-serialisable snapshot of the three sync-able stores.
+   *  Also stamps exportedAt in the settings store so it persists. */
+  const getSyncSnapshot = useCallback(async () => {
+    if (!dbRef.current) return null;
+    const [savedA2T, savedItems, savedSettings] = await Promise.all([
+      dbLoadAllA2T(dbRef.current),
+      dbLoadAllItems(dbRef.current),
+      dbLoadAllSettings(dbRef.current),
+    ]);
+    const settingsMap = Object.fromEntries(savedSettings.map((s) => [s.key, s.value]));
+    const now = new Date().toISOString();
+
+    // Stamp exportedAt — persist to DB and update in-memory settings
+    settingsMap.exportedAt = now;
+    await dbSaveSetting(dbRef.current, "exportedAt", now);
+    setSettings((prev) => ({ ...prev, exportedAt: now }));
+
+    return {
+      dbCreatedAt:     settingsMap.dbCreatedAt || "",
+      exportedAt:      now,
+      a2t_results:     savedA2T,
+      organizer_items: savedItems,
+      settings:        settingsMap,
+    };
+  }, []);
+
+  /**
+   * Merge a remote snapshot into local data using last-write-wins by `updatedAt`.
+   * Returns merged organizer_items count for UI feedback.
+   */
+  const mergeSyncData = useCallback(async (remote) => {
+    if (!dbRef.current || !remote) return { itemsUpdated: 0 };
+
+    /* ── organizer_items merge ────────────────────────── */
+    const localItems   = await dbLoadAllItems(dbRef.current);
+    const localById    = new Map(localItems.map((i) => [i.id, i]));
+    const remoteItems  = remote.organizer_items || [];
+    let itemsUpdated   = 0;
+
+    const toWrite = [];
+    remoteItems.forEach((remoteItem) => {
+      const local = localById.get(remoteItem.id);
+      if (!local) {
+        // Item doesn't exist locally at all — always take remote
+        toWrite.push(remoteItem);
+        itemsUpdated++;
+        return;
+      }
+      // Use updatedAt, fall back to createdAt, fall back to 0
+      const remoteTs = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+      const localTs  = new Date(local.updatedAt      || local.createdAt      || 0).getTime();
+      if (remoteTs > localTs) {
+        toWrite.push(remoteItem);
+        itemsUpdated++;
+      }
+    });
+
+    if (toWrite.length > 0) {
+      await dbSaveItems(dbRef.current, toWrite);
+      // Rebuild in-memory items: start from local, overlay remote wins
+      const merged = new Map(localItems.map((i) => [i.id, i]));
+      toWrite.forEach((i) => merged.set(i.id, { ...i, status: i.status || "inprogress" }));
+      setItems(Array.from(merged.values()));
+    }
+
+    /* ── a2t_results merge (status + data, by createdAt) ── */
+    const localA2T   = await dbLoadAllA2T(dbRef.current);
+    const localA2TById = new Map(localA2T.map((r) => [r.recordingId, r]));
+    const remoteA2T  = remote.a2t_results || [];
+
+    const a2tToWrite = [];
+    remoteA2T.forEach((remoteR) => {
+      const local   = localA2TById.get(remoteR.recordingId);
+      const remoteTs = remoteR.createdAt ? new Date(remoteR.createdAt).getTime() : 0;
+      const localTs  = local?.createdAt  ? new Date(local.createdAt).getTime()  : 0;
+      if (!local || remoteTs > localTs) {
+        a2tToWrite.push(remoteR);
+      }
+    });
+
+    for (const r of a2tToWrite) {
+      await dbSaveA2T(dbRef.current, r.recordingId, r.status, r.data || null, r.createdAt);
+    }
+
+    if (a2tToWrite.length > 0) {
+      const newMap     = {};
+      const newStatMap = {};
+      [...localA2T, ...a2tToWrite].forEach((r) => {
+        if (r.data)   newMap[r.recordingId]     = r.data;
+        if (r.status) newStatMap[r.recordingId] = r.status;
+      });
+      // Remote wins already written; rebuild from updated DB for accuracy
+      const updated = await dbLoadAllA2T(dbRef.current);
+      updated.forEach((r) => {
+        if (r.data)   newMap[r.recordingId]     = r.data;
+        if (r.status) newStatMap[r.recordingId] = r.status;
+      });
+      setA2tResults(newMap);
+      setA2tStatuses(newStatMap);
+    }
+
+    return { itemsUpdated };
+  }, []);
+
   return {
     dbRef,
     recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
     addRecording, deleteRecording,
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
+    getSyncSnapshot, mergeSyncData,
   };
 }
