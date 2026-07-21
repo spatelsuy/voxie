@@ -12,7 +12,7 @@
 .header {
   padding: 18px 20px 12px;
   background: #ffffff;
-  border-bottom: 0px solid var(--border);
+  border-bottom: 2px solid var(--border);
 }
 .title { font-size: 20px; font-weight: 700; color: var(--text-main); }
 .date  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
@@ -47,9 +47,7 @@
   margin-top: 3px;
   opacity: 0.8;
 }
-.chipTask     { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-.chipEvent    { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
-.chipReminder { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.chipActivity { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
 
 /* view toggle */
 .toggle {
@@ -251,6 +249,25 @@
   border-radius: 12px;
   padding: 8px 10px;
   line-height: 1.5;
+}
+.rowSourceSegment {
+  font-size: 11px;
+  color: #6e6e73;
+  border-left: 3px solid #d1d5db;
+  padding: 5px 10px;
+  margin-top: 2px;
+  line-height: 1.6;
+  font-style: italic;
+}
+.rowSourceSegmentLabel {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  margin-bottom: 3px;
 }
 .rowSourceBtn {
   width: fit-content;

@@ -363,6 +363,12 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
             {item.context && (
               <div className={`${styles.rowMetaTag} ${styles.rowMetaContext}`}>{item.context}</div>
             )}
+            {item.sourceSegment && (
+              <div className={styles.rowSourceSegment}>
+                <span className={styles.rowSourceSegmentLabel}>From recording</span>
+                "{item.sourceSegment}"
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -374,31 +380,39 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
 
 /* ─── Reusable section renderer ───────────────────── */
 function TypeSections({ grp, a2tResults, onDeleteItem, onStatusChange, setEditingItem, setSourceText, unscheduled = false }) {
-  const types = [
-    { key: "events",    label: "Events"    },
-    { key: "tasks",     label: "Tasks"     },
-    { key: "reminders", label: "Reminders" },
-    { key: "notes",     label: "Notes"     },
+  const activityItems = [
+    ...grp.events,
+    ...grp.tasks,
+    ...grp.reminders,
   ];
+  const secClass = `${styles.sec} ${unscheduled ? styles.secMuted : ""}`;
+
+  const renderRows = (items) =>
+    items.map((item) => (
+      <ItemRow
+        key={item._occurrenceDate ? `${item.id}_${item._occurrenceDate}` : item.id}
+        item={item}
+        onDelete={onDeleteItem}
+        onStatusChange={onStatusChange}
+        onEdit={setEditingItem}
+        hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+        onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+      />
+    ));
+
   return (
     <>
-      {types.map(({ key, label }) =>
-        grp[key].length > 0 ? (
-          <div key={key}>
-            <div className={`${styles.sec} ${unscheduled ? styles.secMuted : ""}`}>{label}</div>
-            {grp[key].map((item) => (
-              <ItemRow
-                key={item._occurrenceDate ? `${item.id}_${item._occurrenceDate}` : item.id}
-                item={item}
-                onDelete={onDeleteItem}
-                onStatusChange={onStatusChange}
-                onEdit={setEditingItem}
-                hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
-                onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
-              />
-            ))}
-          </div>
-        ) : null
+      {activityItems.length > 0 && (
+        <div>
+          <div className={secClass}>Activities</div>
+          {renderRows(activityItems)}
+        </div>
+      )}
+      {grp.notes.length > 0 && (
+        <div>
+          <div className={secClass}>Notes</div>
+          {renderRows(grp.notes)}
+        </div>
       )}
     </>
   );
@@ -417,10 +431,11 @@ export default function Dashboard({
     .filter((i) => showCompletedItems ? true : i.status !== STATUS_COMPLETED);
 
   /* ── counts (always over all visible items) ── */
-  const taskCnt  = visibleItems.filter((i) => i.type === "task").length;
-  const eventCnt = visibleItems.filter((i) => i.type === "event").length;
-  const remCnt   = visibleItems.filter((i) => i.type === "reminder").length;
-  const hasSummaryCounts = taskCnt > 0 || eventCnt > 0 || remCnt > 0;
+  const taskCnt      = visibleItems.filter((i) => i.type === "task").length;
+  const eventCnt     = visibleItems.filter((i) => i.type === "event").length;
+  const remCnt       = visibleItems.filter((i) => i.type === "reminder").length;
+  const activityCnt  = taskCnt + eventCnt + remCnt;
+  const hasSummaryCounts = activityCnt > 0;
   const isEmpty  = visibleItems.length === 0;
 
   /* ── grouping ── */
@@ -451,17 +466,9 @@ export default function Dashboard({
         {hasSummaryCounts && (
           <>
             <div className={styles.chips}>
-              <div className={`${styles.chip} ${styles.chipTask}`}>
-                <div className={styles.chipNum}>{taskCnt}</div>
-                <div className={styles.chipLbl}>Tasks</div>
-              </div>
-              <div className={`${styles.chip} ${styles.chipEvent}`}>
-                <div className={styles.chipNum}>{eventCnt}</div>
-                <div className={styles.chipLbl}>Events</div>
-              </div>
-              <div className={`${styles.chip} ${styles.chipReminder}`}>
-                <div className={styles.chipNum}>{remCnt}</div>
-                <div className={styles.chipLbl}>Reminders</div>
+              <div className={`${styles.chip} ${styles.chipActivity}`}>
+                <div className={styles.chipNum}>{activityCnt}</div>
+                <div className={styles.chipLbl}>Activities</div>
               </div>
             </div>
 
