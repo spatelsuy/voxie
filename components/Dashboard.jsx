@@ -455,8 +455,12 @@ export default function Dashboard({
 
       {/* Header */}
       <div className={styles.header}>
-        <div className={styles.title}>Kahija</div>
-        <div className={styles.date}>{todayStr()}</div>
+        <div className={styles.headerLeft}>
+          <div className={styles.title}>Kahija</div>
+          <div className={styles.date}>{todayStr()}</div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
       </div>
 
       {/* Scroll area */}

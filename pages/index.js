@@ -33,6 +33,7 @@ export default function Home() {
   }, []);
   const [autoA2TStatus,   setAutoA2TStatus]   = useState(null); // null | "processing" | "done" | "error"
   const [showOnboarding,  setShowOnboarding]  = useState(false);
+  const [liveTranscript,  setLiveTranscript]  = useState("");   // built up from silence-cut segments
 
   const {
     recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
@@ -46,31 +47,54 @@ export default function Home() {
     await addRecording(rec);
   }
 
-  async function handleAutoA2T(rec) {
+  /**
+   * Called per silence-cut segment by ContinuousTranscriber (via VoiceRecorder).
+   * Appends the already-transcribed text to liveTranscript.
+   */
+  function handleTranscriptChunk(text) {
+    if (!text) return;
+    setLiveTranscript((prev) => prev ? prev + " " + text : text);
+  }
+
+  /**
+   * Called by VoiceRecorder after Stop, once all segments have been flushed.
+   * `transcript` is the fully-accumulated liveTranscript; we send it straight
+   * to the text-extraction API — no need to re-transcribe the audio blob.
+   */
+  async function handleAutoA2T(rec, transcript) {
+    const fullTranscript = (transcript || liveTranscript || "").trim();
+
+    // Nothing was said — recording already saved by VoiceRecorder, just reset UI
+    if (!fullTranscript) {
+      setAutoA2TStatus(null);
+      setLiveTranscript("");
+      return;
+    }
+
     setAutoA2TStatus("processing");
-    await markA2TPending(rec.id); // Tier 2: persisted immediately
+    await markA2TPending(rec.id);
 
-    const controller    = new AbortController();
-    const timeoutId     = setTimeout(() => controller.abort(), 60000); // 60 s timeout
-    const formattedDate = getFormattedDate();
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 60000);
 
-    const formData = new FormData();
-    formData.append("user_name", "SunilK");
-    formData.append("client_time", formattedDate);
-    formData.append("file", rec.blob, "recording.webm");
     try {
-      const res = await fetch(API_URL, { method: "POST", body: formData, signal: controller.signal });
+
+      const formData = new FormData();
+      formData.append("user_name",   settings.userName || "SunilK");
+      formData.append("client_time", getFormattedDate());
+      formData.append("text", fullTranscript);
+
+      const res = await fetch(TEXT_API_URL, { method: "POST", body: formData, signal: controller.signal });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const data = await res.json();
-      await saveA2TResult(rec.id, data, rec.createdAt.toDateString()); // sets status "done"
+      await saveA2TResult(rec.id, { ...data, transcription_text: fullTranscript }, rec.createdAt.toDateString());
       setAutoA2TStatus("done");
-      // Don't force tab switch — user may have navigated elsewhere
-      setTimeout(() => setAutoA2TStatus(null), 3000);
+      setTimeout(() => { setAutoA2TStatus(null); setLiveTranscript(""); }, 3000);
     } catch (err) {
       console.error("Auto-A2T failed:", err);
-      await markA2TFailed(rec.id); // Tier 1+2: persisted as failed
+      await markA2TFailed(rec.id);
       setAutoA2TStatus("error");
-      setTimeout(() => setAutoA2TStatus(null), 4000);
+      setTimeout(() => { setAutoA2TStatus(null); setLiveTranscript(""); }, 4000);
     } finally {
       clearTimeout(timeoutId);
     }
@@ -126,6 +150,7 @@ export default function Home() {
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
+        <link rel="icon" type="image/png" href="/K_ico.png" />
       </Head>
 
       <div className={pageStyles.shell}>
@@ -158,6 +183,10 @@ export default function Home() {
               onTextSubmit={handleTextSubmit}
               autoA2TStatus={autoA2TStatus}
               onLearnMore={() => setShowOnboarding(true)}
+              liveTranscript={liveTranscript}
+              onTranscriptChunk={handleTranscriptChunk}
+              silenceSec={settings.silenceSec ?? 1.5}
+              userName={settings.userName || "SunilK"}
             />
           )}
           {activeTab === "record" && showOnboarding && (

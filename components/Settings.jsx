@@ -27,7 +27,11 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
   return (
     <div className={styles.wrap}>
       <div className={styles.header}>
-        <div className={styles.title}>Settings</div>
+        <div className={styles.headerLeft}>
+          <div className={styles.title}>Settings</div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
       </div>
 
       <div className={styles.scroll}>

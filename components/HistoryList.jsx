@@ -154,8 +154,12 @@ export default function HistoryList({
       )}
 
       <div className={styles.header}>
-        <div className={styles.title}>History</div>
-        <div className={styles.sub}>Recordings &amp; A2T results</div>
+        <div className={styles.headerLeft}>
+          <div className={styles.title}>History</div>
+          <div className={styles.sub}>Recordings &amp; A2T results</div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
       </div>
 
       {dbWarning && (
@@ -173,11 +177,10 @@ export default function HistoryList({
             const a2tStatus   = a2tStatuses?.[r.id]; // "pending"|"done"|"failed"|undefined
             const isPending   = a2tStatus === "pending";
             const isFailed    = a2tStatus === "failed";
-            const a           = a2tResults[r.id]?.analysis;
-            const taskCount     = (a?.tasks     || []).length;
-            const eventCount    = (a?.events    || []).length;
-            const reminderCount = (a?.reminders || []).length;
-            const isTextEntry   = r.kind === "text";
+            const a              = a2tResults[r.id]?.analysis;
+            const activityCount  = (a?.tasks || []).length + (a?.events || []).length + (a?.reminders || []).length;
+            const noteCount      = (a?.notes || []).length;
+            const isTextEntry    = r.kind === "text";
 
             return (
               <div key={r.id} className={styles.card}>
@@ -191,9 +194,8 @@ export default function HistoryList({
                 {/* Tags — only when A2T result exists */}
                 {hasResult && (
                   <div className={styles.tags}>
-                    {taskCount     > 0 && <span className={`${styles.tag} ${styles.tagTask}`}>{taskCount} task{taskCount > 1 ? "s" : ""}</span>}
-                    {eventCount    > 0 && <span className={`${styles.tag} ${styles.tagEvent}`}>{eventCount} event{eventCount > 1 ? "s" : ""}</span>}
-                    {reminderCount > 0 && <span className={`${styles.tag} ${styles.tagReminder}`}>{reminderCount} reminder{reminderCount > 1 ? "s" : ""}</span>}
+                    {activityCount > 0 && <span className={`${styles.tag} ${styles.tagActivity}`}>{activityCount} activit{activityCount > 1 ? "ies" : "y"}</span>}
+                    {noteCount     > 0 && <span className={`${styles.tag} ${styles.tagNote}`}>{noteCount} note{noteCount > 1 ? "s" : ""}</span>}
                   </div>
                 )}
 
