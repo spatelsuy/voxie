@@ -257,7 +257,7 @@ export default function useOrganizerDB() {
     showCompletedItems: false,
     autoPause: true,
     autoA2T: false,
-    silenceSec: 10,
+    silenceSec: 2,
     userName: "SunilK",
     dbCreatedAt:     "",       // set once on first boot, never overwritten
     exportedAt:      "",       // updated on every sync/export

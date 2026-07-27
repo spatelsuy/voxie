@@ -105,8 +105,12 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
   return (
     <div className={styles.wrap}>
       <div className={styles.header}>
-        <div className={styles.title}>Profile</div>
-        <div className={styles.sub}>Sign in to sync and personalize your experience</div>
+        <div className={styles.headerLeft}>
+          <div className={styles.title}>Profile</div>
+          <div className={styles.sub}>Sign in to sync and personalize your experience</div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
       </div>
 
       <div className={styles.body}>

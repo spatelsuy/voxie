@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../styles/recorder.module.css";
+import { ContinuousTranscriber } from "../lib/ContinuousTranscriber";
 
 /* ─── Constants ───────────────────────────────────── */
-const SILENCE_TIMEOUT_MS   = 10 * 1000;
-const SILENCE_THRESHOLD    = 5;
 const AUTO_A2T_MAX_SECONDS = 120;
 const AUTO_A2T_MAX_BYTES   = 2 * 1024 * 1024;
 
@@ -39,66 +38,31 @@ export default function VoiceRecorder({
   onTextSubmit,
   autoA2TStatus,
   onLearnMore,
+  liveTranscript,     // string — accumulated transcript, owned by parent (index.js)
+  onTranscriptChunk,  // (text, isFinal) => void — called per speech segment
+  silenceSec,         // number — seconds of silence before cutting (default 1.5)
+  userName,           // string — forwarded to the backend
 }) {
-  const [recState,          setRecState]          = useState("idle"); // idle | recording | paused
-  const [statusText,        setStatusText]        = useState("");
-  const [pauseLabel,        setPauseLabel]        = useState("Pause");
-  const [isTextModalOpen,   setIsTextModalOpen]   = useState(false);
-  const [textValue,         setTextValue]         = useState("");
-  const [textError,         setTextError]         = useState("");
-  const [isSubmittingText,  setIsSubmittingText]  = useState(false);
-  const [msgIndex,          setMsgIndex]          = useState(0);
-  const [msgVisible,        setMsgVisible]        = useState(true); // drives fade
+  const [recState,         setRecState]         = useState("idle"); // idle | recording | paused
+  const [statusText,       setStatusText]        = useState("");
+  const [pauseLabel,       setPauseLabel]        = useState("Pause");
+  const [isTextModalOpen,  setIsTextModalOpen]   = useState(false);
+  const [textValue,        setTextValue]         = useState("");
+  const [textError,        setTextError]         = useState("");
+  const [isSubmittingText, setIsSubmittingText]  = useState(false);
+  const [msgIndex,         setMsgIndex]          = useState(0);
+  const [msgVisible,       setMsgVisible]        = useState(true);
 
-  const mediaRecorderRef    = useRef(null);
-  const streamRef           = useRef(null);
-  const audioChunksRef      = useRef([]);
-  const audioContextRef     = useRef(null);
-  const analyserRef         = useRef(null);
-  const dataArrayRef        = useRef(null);
+  const transcriberRef      = useRef(null);  // ContinuousTranscriber instance
+  const startTimeRef        = useRef(null);
   const secondsRef          = useRef(0);
   const isPausedRef         = useRef(false);
   const timerIntervalRef    = useRef(null);
-  const startTimeRef        = useRef(null);
   const uiIntervalRef       = useRef(null);
-  const liveSizeRef         = useRef(0);
-  const silenceRafIdRef     = useRef(null);
-  const silenceStartedAtRef = useRef(null);
-  const isAutoPausedRef     = useRef(false);
+  const waveRafRef          = useRef(null);
   const canvasRef           = useRef(null);
-
-  /* ── Waveform ──────────────────────────────────── */
-  function setupWaveform(stream) {
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    analyserRef.current     = audioContextRef.current.createAnalyser();
-    const src = audioContextRef.current.createMediaStreamSource(stream);
-    src.connect(analyserRef.current);
-    analyserRef.current.fftSize = 256;
-    dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-  }
-
-  function drawWaveform() {
-    const canvas = canvasRef.current;
-    if (!analyserRef.current || !canvas) return;
-    analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
-    const c = canvas.getContext("2d");
-    canvas.width  = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-    c.clearRect(0, 0, canvas.width, canvas.height);
-    c.strokeStyle = "rgba(255,255,255,0.85)";
-    c.lineWidth   = 2.5;
-    c.lineCap     = "round";
-    c.beginPath();
-    const sw = canvas.width / dataArrayRef.current.length;
-    let x = 0;
-    for (let i = 0; i < dataArrayRef.current.length; i++) {
-      const y = (dataArrayRef.current[i] / 128.0) * (canvas.height / 2);
-      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
-      x += sw;
-    }
-    c.lineTo(canvas.width, canvas.height / 2);
-    c.stroke();
-  }
+  // Accumulates transcript synchronously — avoids stale React state closure
+  const transcriptAccumRef  = useRef("");
 
   /* ── Timer ─────────────────────────────────────── */
   function startTimer() {
@@ -108,7 +72,7 @@ export default function VoiceRecorder({
       if (!isPausedRef.current) secondsRef.current++;
     }, 1000);
   }
-  function pauseTimer()  { isPausedRef.current = true;  }
+  function pauseTimer()  { isPausedRef.current = true; }
   function resumeTimer() { isPausedRef.current = false; }
   function stopTimer()   { clearInterval(timerIntervalRef.current); timerIntervalRef.current = null; }
 
@@ -116,77 +80,51 @@ export default function VoiceRecorder({
     return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   }
 
-  /* ── Live UI update ────────────────────────────── */
-  function updateUI() {
-    const mr = mediaRecorderRef.current;
-    if (!mr) return;
-    if (mr.state === "recording") {
-      setStatusText(formatDur(secondsRef.current));
-    } else if (mr.state === "paused") {
-      setStatusText(isAutoPausedRef.current
-        ? `${formatDur(secondsRef.current)} — speak to resume`
-        : formatDur(secondsRef.current));
-    }
-    drawWaveform();
-  }
+  /* ── Waveform — reads from the transcriber's AnalyserNode ─────── */
+  function startWaveform() {
+    const draw = () => {
+      waveRafRef.current = requestAnimationFrame(draw);
+      const analyser = transcriberRef.current?.getAnalyser();
+      const canvas   = canvasRef.current;
+      if (!analyser || !canvas) return;
 
-  /* ── Silence detection ─────────────────────────── */
-  function startSilenceDetection() {
-    silenceStartedAtRef.current = null;
-    isAutoPausedRef.current     = false;
-    function tick() {
-      silenceRafIdRef.current = requestAnimationFrame(tick);
-      if (!analyserRef.current || !mediaRecorderRef.current) return;
-      analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
-      let sq = 0;
-      for (let i = 0; i < dataArrayRef.current.length; i++) {
-        const v = dataArrayRef.current[i] - 128; sq += v * v;
+      const buf = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(buf);
+
+      const c = canvas.getContext("2d");
+      canvas.width  = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+      c.clearRect(0, 0, canvas.width, canvas.height);
+      c.strokeStyle = "rgba(255,255,255,0.85)";
+      c.lineWidth   = 2.5;
+      c.lineCap     = "round";
+      c.beginPath();
+      const sw = canvas.width / buf.length;
+      let x = 0;
+      for (let i = 0; i < buf.length; i++) {
+        const y = (buf[i] / 128.0) * (canvas.height / 2);
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+        x += sw;
       }
-      const isSilent = Math.sqrt(sq / dataArrayRef.current.length) < SILENCE_THRESHOLD;
-      const state    = mediaRecorderRef.current.state;
-      if (state === "recording") {
-        if (isSilent) {
-          if (!silenceStartedAtRef.current) silenceStartedAtRef.current = Date.now();
-          if (Date.now() - silenceStartedAtRef.current >= SILENCE_TIMEOUT_MS) {
-            mediaRecorderRef.current.pause();
-            pauseTimer();
-            setPauseLabel("Resume");
-            setRecState("paused");
-            isAutoPausedRef.current     = true;
-            silenceStartedAtRef.current = null;
-          }
-        } else { silenceStartedAtRef.current = null; }
-      } else if (state === "paused" && isAutoPausedRef.current) {
-        if (!isSilent) {
-          mediaRecorderRef.current.resume();
-          resumeTimer();
-          setPauseLabel("Pause");
-          setRecState("recording");
-          isAutoPausedRef.current     = false;
-          silenceStartedAtRef.current = null;
-        }
-      }
-    }
-    silenceRafIdRef.current = requestAnimationFrame(tick);
-  }
-
-  function stopSilenceDetection() {
-    if (silenceRafIdRef.current) { cancelAnimationFrame(silenceRafIdRef.current); silenceRafIdRef.current = null; }
-    silenceStartedAtRef.current = null;
-    isAutoPausedRef.current     = false;
-  }
-
-  /* ── MediaRecorder ─────────────────────────────── */
-  function createRecorder(stream) {
-    const recorder = new MediaRecorder(stream, {
-      mimeType: "audio/webm; codecs=opus", audioBitsPerSecond: 24000,
-    });
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) { audioChunksRef.current.push(e.data); liveSizeRef.current += e.data.size; }
+      c.lineTo(canvas.width, canvas.height / 2);
+      c.stroke();
     };
-    recorder.onstop = saveRecording;
-    return recorder;
+    waveRafRef.current = requestAnimationFrame(draw);
   }
+
+  function stopWaveform() {
+    if (waveRafRef.current) { cancelAnimationFrame(waveRafRef.current); waveRafRef.current = null; }
+  }
+
+  /* ── UI tick — updates the displayed timer ──────────────────────  */
+  function startUITick() {
+    uiIntervalRef.current = setInterval(() => {
+      if (transcriberRef.current?.isRecording) {
+        setStatusText(formatDur(secondsRef.current));
+      }
+    }, 300);
+  }
+  function stopUITick() { clearInterval(uiIntervalRef.current); uiIntervalRef.current = null; }
 
   /* ── Text modal ────────────────────────────────── */
   function openTextModal()  { setTextError(""); setIsTextModalOpen(true); }
@@ -209,22 +147,50 @@ export default function VoiceRecorder({
     }
   }
 
-  /* ── Start ─────────────────────────────────────── */
+  /* ── Start recording ───────────────────────────── */
   async function startRecording() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
+      const transcriber = new ContinuousTranscriber({
+        backendUrl:  "/api/transcribe-only",
+        userName:    userName || "SunilK",
+        silenceMs:   (silenceSec ?? 2) * 1000,
+        autoPauseMs: 10000,
+        onTranscript: ({ transcription, isFinal }) => {
+          const text = (transcription || "").trim();
+          if (text) {
+            // Write to ref synchronously — this is always current at save time
+            transcriptAccumRef.current = transcriptAccumRef.current
+              ? transcriptAccumRef.current + " " + text
+              : text;
+            // Also update parent state for live display
+            onTranscriptChunk?.(text, isFinal);
+          }
+        },
+        onError: (err) => console.error("[Transcriber]", err),
+        onStatusChange: () => {},
+        // Auto-pause: show paused UI, user can tap Resume or just speak
+        onAutoPause: () => {
+          pauseTimer();
+          setPauseLabel("Resume");
+          setRecState("paused");
+          setStatusText("Auto-paused — speak or tap Resume");
+        },
+        // Auto-resume by voice: restore recording UI
+        onAutoResume: () => {
+          resumeTimer();
+          setPauseLabel("Pause");
+          setRecState("recording");
+        },
       });
-      streamRef.current      = stream;
-      audioChunksRef.current = [];
-      liveSizeRef.current    = 0;
-      startTimeRef.current   = Date.now();
-      setupWaveform(stream);
-      mediaRecorderRef.current = createRecorder(stream);
-      mediaRecorderRef.current.start();
+
+      await transcriber.start();
+      transcriberRef.current     = transcriber;
+      startTimeRef.current       = Date.now();
+      transcriptAccumRef.current = "";   // reset accumulator for new session
+
       startTimer();
-      startSilenceDetection();
-      uiIntervalRef.current = setInterval(updateUI, 300);
+      startWaveform();
+      startUITick();
       setRecState("recording");
       setPauseLabel("Pause");
       setStatusText("00:00");
@@ -236,51 +202,88 @@ export default function VoiceRecorder({
 
   /* ── Pause / Resume ────────────────────────────── */
   function togglePause() {
-    const mr = mediaRecorderRef.current;
-    if (!mr) return;
-    if (mr.state === "recording") {
-      mr.pause(); pauseTimer(); setPauseLabel("Resume"); setRecState("paused");
-    } else if (mr.state === "paused") {
-      mr.resume(); resumeTimer(); setPauseLabel("Pause"); setRecState("recording");
-      isAutoPausedRef.current = false; silenceStartedAtRef.current = null;
+    const t = transcriberRef.current;
+    if (!t) return;
+
+    if (!isPausedRef.current) {
+      // ── Manual pause ──────────────────────────────────────────────
+      // Stop the RMS watcher so no soft-stop or auto-pause can fire
+      if (t._rafId) { cancelAnimationFrame(t._rafId); t._rafId = null; }
+      if (t.sendRecorder?.state    === "recording") t.sendRecorder.pause();
+      if (t.archiveRecorder?.state === "recording") t.archiveRecorder.pause();
+      pauseTimer();
+      setPauseLabel("Resume");
+      setRecState("paused");
+    } else {
+      // ── Manual resume (works for both manual pause and auto-pause) ─
+      if (t._autoPaused) {
+        // Was auto-paused — use the transcriber's own resume path
+        // so _autoPaused flag is cleared and RMS monitor restarts cleanly
+        t.manualResume();
+      } else {
+        // Was manually paused — resume recorders + restart RMS monitor
+        if (t.sendRecorder?.state    === "paused") t.sendRecorder.resume();
+        if (t.archiveRecorder?.state === "paused") t.archiveRecorder.resume();
+        t._startRMSMonitor();
+      }
+      resumeTimer();
+      setPauseLabel("Pause");
+      setRecState("recording");
     }
   }
 
-  /* ── Stop ──────────────────────────────────────── */
+  /* ── Stop recording ────────────────────────────── */
   function stopRecording() {
-    stopSilenceDetection();
-    mediaRecorderRef.current.stop();
+    const t = transcriberRef.current;
+    if (!t) return;
+
     stopTimer();
-    clearInterval(uiIntervalRef.current);
+    stopWaveform();
+    stopUITick();
+
+    const duration = secondsRef.current;
+    const recStart = startTimeRef.current;
+
+    // _onStopped fires from inside _teardown(), which is called only
+    // after the final segment's onstop has completed — guaranteeing
+    // the archive blob is fully assembled before saveRecording runs.
+    t._onStopped = () => saveRecording(t, duration, recStart);
+    t.stop();
+    transcriberRef.current = null;
+
     setRecState("idle");
     setPauseLabel("Pause");
-    setStatusText("Saving…");
+    setStatusText("Transcribing…");
   }
 
-  /* ── Save ──────────────────────────────────────── */
-  async function saveRecording() {
+  /* ── Save (fired by _onStopped after last segment onstop) ──────── */
+  async function saveRecording(t, duration, recStart) {
     try {
-      const tempBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      const duration = secondsRef.current;
-      const blob     = tempBlob;
-      const url      = URL.createObjectURL(blob);
+      // If the user never spoke, skip saving entirely — nothing useful to store
+      if (!(transcriptAccumRef.current || "").trim()) {
+        setStatusText("");
+        return;
+      }
+
+      const fullBlob = t.getFullBlob();
+      const url      = URL.createObjectURL(fullBlob);
       const rec = {
-        name: "Recording " + new Date(startTimeRef.current).toLocaleString("en-US", {
+        name: "Recording " + new Date(recStart).toLocaleString("en-US", {
           month: "short", day: "2-digit", year: "numeric",
           hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
         }),
-        id: Date.now(), blob, url,
-        size: blob.size, duration, createdAt: new Date(),
+        id: Date.now(), blob: fullBlob, url,
+        size: fullBlob.size, duration, createdAt: new Date(),
         kind: "audio",
       };
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      if (audioContextRef.current) audioContextRef.current.close();
 
-      const qualifies = duration <= AUTO_A2T_MAX_SECONDS && blob.size <= AUTO_A2T_MAX_BYTES;
+      const qualifies = duration <= AUTO_A2T_MAX_SECONDS && fullBlob.size <= AUTO_A2T_MAX_BYTES;
+
       if (qualifies && onAutoA2T) {
         setStatusText("Analysing…");
         if (onRecordingSaved) await onRecordingSaved(rec);
-        onAutoA2T(rec);
+        // Use the ref — it is always fully current, never stale from React closure
+        onAutoA2T(rec, transcriptAccumRef.current || "");
       } else {
         setStatusText(qualifies ? "Saved ✓" : "Saved ✓ — tap A2T in History");
         if (onRecordingSaved) onRecordingSaved(rec);
@@ -290,43 +293,32 @@ export default function VoiceRecorder({
     }
   }
 
-  /* ── Circle tap handler ────────────────────────── */
+  /* ── Circle tap ────────────────────────────────── */
   function handleCircleTap() {
     if (recState === "idle" && autoA2TStatus !== "processing") {
       startRecording();
-    } else if (recState === "recording") {
-      stopRecording();
-    } else if (recState === "paused") {
+    } else if (recState === "recording" || recState === "paused") {
       stopRecording();
     }
   }
 
   const isActiveRec = recState === "recording" || recState === "paused";
 
-  /* ── Clear local statusText when parent reports done/error ── */
+  /* ── Sync statusText with autoA2TStatus from parent ─────────────  */
   useEffect(() => {
-    if (autoA2TStatus === "done") {
-      setStatusText("Done ✓");
-    } else if (autoA2TStatus === "error") {
-      setStatusText("Failed — try manually");
-    } else if (autoA2TStatus === null && recState === "idle") {
-      // Fully reset after the status clears
-      setStatusText("");
-    }
+    if (autoA2TStatus === "done")        setStatusText("Done ✓");
+    else if (autoA2TStatus === "error")  setStatusText("Failed — try manually");
+    else if (autoA2TStatus === null && recState === "idle") setStatusText("");
   }, [autoA2TStatus, recState]);
 
-  /* ── Rotate idle messages every 15 s (only while idle) ── */
+  /* ── Rotate idle messages every 15 s ──────────────────────────── */
   useEffect(() => {
     if (recState !== "idle") return;
-    const interval = setInterval(() => {
-      // fade out
+    const id = setInterval(() => {
       setMsgVisible(false);
-      setTimeout(() => {
-        setMsgIndex((i) => (i + 1) % IDLE_MESSAGES.length);
-        setMsgVisible(true); // fade in
-      }, 400); // matches CSS transition duration
+      setTimeout(() => { setMsgIndex((i) => (i + 1) % IDLE_MESSAGES.length); setMsgVisible(true); }, 400);
     }, MESSAGE_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => clearInterval(id);
   }, [recState]);
 
   const isLikelyWebView = useMemo(() => {
@@ -337,11 +329,9 @@ export default function VoiceRecorder({
       /FBAN|FBAV|Instagram|Line\/|MicroMessenger|KAKAOTALK|TikTok|Snapchat|Twitter/i.test(ua);
   }, []);
 
-  /* ── Derive circle state ───────────────────────── */
-  // isSaving: only true while status text is "Analysing…" AND backend hasn't responded yet
-  // If autoA2TStatus is "error" or "done", the backend call has resolved — exit processing
+  /* ── Derive circle visual state ────────────────────────────────── */
   const isProcessing = recState === "idle" && autoA2TStatus === "processing";
-  const isSaving     = (statusText === "Saving…" || statusText === "Analysing…")
+  const isSaving     = (statusText === "Saving…" || statusText === "Analysing…" || statusText === "Transcribing…")
                        && autoA2TStatus !== "error"
                        && autoA2TStatus !== "done";
 
@@ -350,29 +340,32 @@ export default function VoiceRecorder({
   if (recState === "paused")     circleState = "paused";
   if (isProcessing || isSaving)  circleState = "processing";
 
-  /* ── Derive label and hint ─────────────────────── */
+  /* ── Labels ────────────────────────────────────── */
   const idleMsg = IDLE_MESSAGES[msgIndex];
 
   const circleLabel =
-    circleState === "recording"  ? statusText || "Recording…"                                      :
-    circleState === "paused"     ? statusText                                                       :
-    circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : statusText || "Processing…") :
-    autoA2TStatus === "done"     ? "Done — check Inbox"                                         :
-    autoA2TStatus === "error"    ? "Failed — try manually"                                         :
+    circleState === "recording"  ? statusText || "Recording…"                                            :
+    circleState === "paused"     ? statusText                                                             :
+    circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : statusText || "Processing…")  :
+    autoA2TStatus === "done"     ? "Done — check Inbox"                                                  :
+    autoA2TStatus === "error"    ? "Failed — try manually"                                               :
     idleMsg.label;
 
   const circleHint =
-    circleState === "recording"  ? "Tap to stop"                    :
+    circleState === "recording"  ? "Tap to stop"                  :
     circleState === "paused"     ? "Tap to stop or click resume"  :
-    circleState === "processing" ? ""                               :
-    autoA2TStatus === "done" || autoA2TStatus === "error" ? ""      :
+    circleState === "processing" ? ""                             :
+    autoA2TStatus === "done" || autoA2TStatus === "error" ? ""    :
     idleMsg.hint;
 
-  const showLearnBtn = circleState === "idle" && !autoA2TStatus;
+  const showLearnBtn   = circleState === "idle" && !autoA2TStatus;
   const labelFadeClass = circleState === "idle" && !autoA2TStatus
     ? (msgVisible ? styles.msgVisible : styles.msgHidden)
     : "";
 
+  const showTranscript = isActiveRec || isProcessing || !!(liveTranscript?.trim());
+
+  /* ── Render ────────────────────────────────────── */
   return (
     <div className={styles.wrap}>
 
@@ -415,64 +408,70 @@ export default function VoiceRecorder({
         </div>
       )}
 
-      {/* ── Main screen ── */}
+      {/* ── Main stage ── */}
       <div className={styles.stage}>
-
-        {/* Circle */}
+        {/* Big circle */}
         <button
           className={`${styles.circle} ${styles[`circle_${circleState}`]}`}
           onClick={handleCircleTap}
           disabled={isProcessing}
           aria-label={circleState === "idle" ? "Start recording" : "Stop recording"}
         >
-          {/* Ripple rings — visible while recording */}
           {circleState === "recording" && (
             <>
               <span className={`${styles.ring} ${styles.ring1}`} />
               <span className={`${styles.ring} ${styles.ring2}`} />
             </>
           )}
-
-          {/* Waveform canvas inside circle when recording */}
-          {isActiveRec && (
-            <canvas ref={canvasRef} className={styles.circleCanvas} />
-          )}
-
-          {/* Icon / spinner overlay */}
+          {isActiveRec && <canvas ref={canvasRef} className={styles.circleCanvas} />}
           <span className={styles.circleIcon}>
             {circleState === "processing" ? (
               <span className={styles.spinner} />
-            ) : circleState === "recording" ? (
-              "■"   /* stop symbol */
-            ) : circleState === "paused" ? (
+            ) : circleState === "recording" || circleState === "paused" ? (
               "■"
             ) : (
               "🎙"
             )}
           </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/K_Logo-record.png" alt="Kahija" className={styles.circleLogo} />
         </button>
 
-        {/* Label + hint — fade when rotating */}
+        {/* Label + hint */}
         <div className={`${styles.circleLabel} ${labelFadeClass}`}>{circleLabel}</div>
-        {circleHint ? (
-          <div className={`${styles.circleHint} ${labelFadeClass}`}>{circleHint}</div>
-        ) : null}
+        {circleHint && <div className={`${styles.circleHint} ${labelFadeClass}`}>{circleHint}</div>}
 
-        {/* Learn About Kahija — idle only, centred */}
+        {/* Live transcript box */}
+        {showTranscript && (
+          <div className={styles.transcriptBox}>
+            <div className={styles.transcriptHeader}>
+              <span className={styles.transcriptLabel}>Live Transcript</span>
+              {isActiveRec && <span className={styles.transcriptDot} />}
+            </div>
+            <div className={styles.transcriptText}>
+              {liveTranscript?.trim()
+                ? liveTranscript
+                : <span className={styles.transcriptPlaceholder}>Listening… transcript will appear here as you speak.</span>
+              }
+            </div>
+          </div>
+        )}
+
+        {/* Learn About Kahija — idle only */}
         {showLearnBtn && (
           <button className={styles.learnBtn} onClick={onLearnMore}>
             Learn About Kahija
           </button>
         )}
 
-        {/* Pause pill — only visible while active */}
+        {/* Pause pill */}
         {isActiveRec && (
           <button className={styles.pauseBtn} onClick={togglePause}>
             {pauseLabel}
           </button>
         )}
 
-        {/* Text input trigger — bottom right */}
+        {/* Text input trigger */}
         <button
           className={styles.textBtn}
           onClick={openTextModal}
@@ -482,6 +481,7 @@ export default function VoiceRecorder({
         >
           T
         </button>
+
       </div>
     </div>
   );

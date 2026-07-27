@@ -186,11 +186,29 @@
 }
 
 /* ─── Section theme accents ──────────────────────── */
-.themeTasks .sectionHeader     { border-left: 3px solid #0071e3; }
-.themeTasks .sectionIcon       { background: #eef3ff; }
-.themeEvents .sectionHeader    { border-left: 3px solid #34c759; }
-.themeEvents .sectionIcon      { background: #f0faf0; }
-.themeReminders .sectionHeader { border-left: 3px solid #ff9500; }
-.themeReminders .sectionIcon   { background: #fff7ee; }
-.themeNotes .sectionHeader     { border-left: 3px solid #af52de; }
-.themeNotes .sectionIcon       { background: #f5f0ff; }
+.themeActivities .sectionHeader { border-left: 3px solid #0071e3; }
+.themeActivities .sectionIcon   { background: #eef3ff; }
+.themeNotes .sectionHeader      { border-left: 3px solid #af52de; }
+.themeNotes .sectionIcon        { background: #f5f0ff; }
+
+/* ─── Item top-right (type pill + priority dot) ──── */
+.itemTopRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ─── Type pill on each activity item ────────────── */
+.typeTag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+
+.type_task     { background: #eef3ff; color: #2c5cc5; }
+.type_event    { background: #f0faf0; color: #276749; }
+.type_reminder { background: #fff7ee; color: #b45309; }
