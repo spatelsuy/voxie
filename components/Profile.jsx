@@ -148,7 +148,7 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
               <div className={styles.backendToggle}>
                 <button
                   className={`${styles.backendBtn} ${backend === "drive" ? styles.backendBtnActive : ""}`}
-                  onClick={() => onSaveSetting("storageBackend", "drive")} disabled
+                  onClick={() => onSaveSetting("storageBackend", "drive")}
                 >
                   Google Drive
                 </button>
