@@ -146,9 +146,9 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
             <>
               <div className={styles.sectionLabel}>Storage backend</div>
               <div className={styles.backendToggle}>
-                <button
+                {/*<button
                   className={`${styles.backendBtn} ${backend === "drive" ? styles.backendBtnActive : ""}`}
-                  onClick={() => onSaveSetting("storageBackend", "drive")}
+                  onClick={() => onSaveSetting("storageBackend", "drive")} disabled
                 >
                   Google Drive
                 </button>
@@ -157,12 +157,10 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
                   onClick={() => onSaveSetting("storageBackend", "supabase")}
                 >
                   Kahija DB
-                </button>
+                </button>*/}
               </div>
               <div className={styles.backendNote}>
-                {backend === "drive"
-                  ? "Stored in your Google Drive hidden app folder."
-                  : "Stored in Kahija DB. No Google Drive access needed."}
+                End to end encrypt (in-transit and at-rest). Only you can decrypt.
               </div>
             </>
           )}
@@ -200,13 +198,13 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
           )}
 
           {/* ── View Sync JSON ── */}
-          <button
+          {/*<button
             className={styles.syncJsonBtn}
             onClick={handleViewSync}
             disabled={jsonLoading}
           >
             {jsonLoading ? "Loading…" : "View Sync JSON"}
-          </button>
+          </button> */}
         </div>
       </div>
 

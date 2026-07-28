@@ -63,7 +63,7 @@ function OnboardingSlide({ page, onAction }) {
           <div className={styles.outputList}>
             {page.items.map((item) => (
               <div key={item.title} className={styles.outputItem}>
-                <div className={styles.outputIcon}>{item.icon}</div>
+                
                 <div className={styles.outputContent}>
                   <div className={styles.outputTitle}>{item.title}</div>
                   <div className={styles.outputDetail}>{item.detail}</div>

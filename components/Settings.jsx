@@ -42,11 +42,11 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
 
           <div className={styles.row}>
             <span className={styles.rowIcon}>🔇</span>
-            <span className={styles.rowLabel}>Auto-pause on silence</span>
+            <span className={styles.rowLabel}>Auto-pause on silence [10 seconds]</span>
             <button
-              className={`${styles.toggle} ${settings.autoPause ? styles.toggleOn : ""}`}
-              onClick={() => onSettingChange("autoPause", !settings.autoPause)}
-              aria-label="Toggle auto-pause"
+              className={`${styles.toggle} ${styles.toggleOn} ${styles.toggleLocked}`}
+              aria-label="Auto-pause always on"
+              disabled
             >
               <span className={styles.toggleThumb} />
             </button>
@@ -56,9 +56,9 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
             <span className={styles.rowIcon}>⏱</span>
             <span className={styles.rowLabel}>Silence timeout</span>
             <div className={styles.stepper}>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.max(5, settings.silenceSec - 5))}>−</button>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.max(2, settings.silenceSec - 1))}>−</button>
               <span className={styles.stepVal}>{settings.silenceSec}s</span>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.min(120, settings.silenceSec + 5))}>+</button>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.min(10, settings.silenceSec + 1))}>+</button>
             </div>
           </div>
         </div>

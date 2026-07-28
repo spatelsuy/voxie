@@ -36,7 +36,7 @@ export const ONBOARDING_PAGES = [
     title: "Unstructured Speech. Structured Execution.",
     label: "What you say (Stream of Consciousness)",
     text:
-      '"Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.Tomorrow remind me to call Swarna at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting."',
+      'Tomorrow remind me to call Swa at 10. I have a project review at 3. I also need to buy batteries and printer paper. Remember that the team needs updated numbers before the meeting.',
   },
   {
     id: "demo-output",
@@ -45,22 +45,22 @@ export const ONBOARDING_PAGES = [
     items: [
       {
         icon: "⏰",
-        title: "Reminders",
-        detail: "Call Swarna (Tomorrow at 10:00 AM)",
+        title: "Activities",
+        detail: "Call Swa (Tomorrow at 10:00 AM)",
       },
       {
         icon: "📅",
-        title: "Events & Meetings",
+        title: "",
         detail: "Project Review (Tomorrow at 3:00 PM)",
       },
       {
         icon: "✅",
-        title: "Tasks",
+        title: "",
         detail: "Buy batteries • Buy printer paper",
       },
       {
         icon: "💡",
-        title: "Important Context",
+        title: "",
         detail: "Team needs updated numbers before the project review meeting.",
       },
     ],
