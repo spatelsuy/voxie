@@ -146,9 +146,9 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
             <>
               <div className={styles.sectionLabel}>Storage backend</div>
               <div className={styles.backendToggle}>
-                {/*<button
+                <button
                   className={`${styles.backendBtn} ${backend === "drive" ? styles.backendBtnActive : ""}`}
-                  onClick={() => onSaveSetting("storageBackend", "drive")} disabled
+                  onClick={() => onSaveSetting("storageBackend", "drive")}
                 >
                   Google Drive
                 </button>
@@ -157,7 +157,7 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
                   onClick={() => onSaveSetting("storageBackend", "supabase")}
                 >
                   Kahija DB
-                </button>*/}
+                </button>
               </div>
               <div className={styles.backendNote}>
                 End to end encrypt (in-transit and at-rest). Only you can decrypt.
