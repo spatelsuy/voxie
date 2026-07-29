@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { ONBOARDING_PAGES } from "../content/onboardingContent";
+// ── Toggle: change false → true to preview new onboarding content ──
+const USE_NEW_ONBOARDING = true;
+import { ONBOARDING_PAGES as OLD_PAGES } from "../content/onboardingContent";
+import { ONBOARDING_PAGES as NEW_PAGES } from "../content/newOnboardingContent";
+const ONBOARDING_PAGES = USE_NEW_ONBOARDING ? NEW_PAGES : OLD_PAGES;
 import styles from "../styles/onboarding.module.css";
 
 function OnboardingSlide({ page, onAction }) {
@@ -83,6 +87,41 @@ function OnboardingSlide({ page, onAction }) {
         <div className={styles.useCaseGrid}>
           {page.items.map((item) => (
             <div key={item} className={styles.useCaseTag}>{item}</div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (page.type === "steps") {
+    return (
+      <section className={`${styles.slideCard} ${styles.stepsSlide}`}>
+        <div className={styles.sectionTitle}>{page.title}</div>
+        <div className={styles.stepsList}>
+          {page.steps.map((step) => (
+            <div key={step.number} className={styles.stepItem}>
+              <div className={styles.stepNumber}>{step.number}</div>
+              <div className={styles.stepBody}>
+                <div className={styles.stepLabel}>{step.label}</div>
+                <div className={styles.stepDetail}>{step.detail}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (page.type === "privacy") {
+    return (
+      <section className={`${styles.slideCard} ${styles.privacySlide}`}>
+        <div className={styles.sectionTitle}>{page.title}</div>
+        <div className={styles.privacyList}>
+          {page.points.map((point) => (
+            <div key={point} className={styles.privacyItem}>
+              <span className={styles.privacyIcon}></span>
+              <span>{point}</span>
+            </div>
           ))}
         </div>
       </section>
