@@ -5,7 +5,7 @@ export const ONBOARDING_PAGES = [
     logo: "🎙",
     title: "Your voice, instantly organised.",
     description:
-      "Speak naturally. Kahija listens, transcribes, and turns your words into tasks, reminders, and events — automatically.",
+      "Speak naturally. Kahija listens, transcribes, and turns your words into activities automatically.",
     cta: "Try it now",
   },
   {

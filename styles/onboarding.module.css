@@ -7,6 +7,17 @@
 .panel {
   --slide-width: 100%;
   --slide-height: 85%;
+  /* ── Typography scale (change here to affect all slides) ── */
+  --font-heading:  22px;   /* slide titles / eyebrows           */
+  --font-body:     15px;   /* main readable text                */
+  --font-detail:   13px;   /* secondary / supporting text       */
+  --font-label:    11px;   /* uppercase labels / meta           */
+  --line-body:     1.6;
+  --line-heading:  1.2;
+  --color-text:    #0f172a;
+  --color-muted:   #57606a;
+  --color-faint:   #8b949e;
+
   width: 100%;
   height: 100%;
   max-width: var(--slide-width);
@@ -15,12 +26,13 @@
   background: white;
   border: 1px solid white;
   border-radius: 20px;
-  color: #050d1f;
+  color: var(--color-text);
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-size: var(--font-body);
+  line-height: var(--line-body);
   overflow-y: auto;
-
   display: flex;
   flex-direction: column;
-  
 }
 
 /* ─── Top bar ────────────────────────────────────── */
@@ -72,11 +84,12 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  text-align: left;
 }
 
-/* ─── Hero slide ─────────────────────────────────── */
+/* ─── Hero slide — centred exception ─────────────── */
 .heroSlide {
   align-items: center;
   text-align: center;
@@ -94,35 +107,39 @@
 }
 
 .heroTitle {
-  font-size: 30px;
+  font-size: calc(var(--font-heading) + 6px);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.15;
+  line-height: var(--line-heading);
   margin: 0;
 }
 
 .heroText {
-  font-size: 13px;
-  line-height: 1.6;
-  color: #9ca3af;
+  font-size: var(--font-body);
+  line-height: var(--line-body);
+  font-weight: 400;
+  color: var(--color-text);
   margin: 0;
   max-width: 420px;
 }
 
 /* ─── Problem / Solution slide cards ─────────────── */
 .slideCard {
-  align-items: center;
+  align-items: flex-start;
   gap: 20px;
+  padding: 0 4px;
 }
 
 .problemSlide { border-left: none; }
 .solutionSlide { border-left: none;}
 
 .cardEyebrow {
-  font-size: 30px;
+  font-size: var(--font-heading);
   font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: var(--line-heading);
+  text-align: left;
+  width: 100%;
 }
 
 .problemSlide .cardEyebrow { color: #ef4444; }
@@ -132,8 +149,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--font-body);
+  font-weight: 400;
+  line-height: var(--line-body);
 }
 
 .timelineStep {
@@ -156,9 +174,9 @@
 .timelineStep4 { opacity: 1; color: #fca5a5; font-weight: 700; }
 
 .solutionLead {
-  font-size: 13px;
-  line-height: 1.6;
-  flex-direction: column;
+  font-size: var(--font-body);
+  font-weight: 500;
+  line-height: var(--line-body);
   color: #0d57ec;
   margin: 0;
 }
@@ -172,9 +190,9 @@
 .solutionItem {
   position: relative;
   padding-left: 18px;
-  color: #9ca3af;
-  font-size: 12px;
-  line-height: 1.55;
+  color: var(--color-muted);
+  font-size: var(--font-detail);
+  line-height: var(--line-body);
 }
 
 .solutionItem::before {
@@ -189,46 +207,45 @@
 .demoSlide { gap: 12px; }
 
 .sectionTitle {
-  font-size: 30px;
+  font-size: var(--font-heading);
   font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: var(--line-heading);
+  text-align: left;
+  width: 100%;
 }
 
 .demoCard {
-  padding: 16px;
-  width: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items:flex-start;
-  
-}
-
-.demoLabel {
-  font-size: 10px;
-  text-transform: uppercase;
+  font-size: 16px;
   letter-spacing: 0.08em;
   color: #0c0c0c;
   font-weight: 700;
   flex-shrink: 0;
-  margin-left: 5%;
+  margin-left: 0%;
   margin-right: 5%;
+  
+}
+
+.demoLabel {
+  font-size: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .audioInput {
-  font-size: 13px;
-  line-height: 1.6;
-  color: #030813;
-  margin-left: 5%;
-  margin-right: 5%;
+  font-size: var(--font-body);
+  font-weight: 400;
+  line-height: var(--line-body);
+  color: var(--color-text);
 }
 
 .outputList {
   display: flex;
   flex-direction: column;
-  width: 90%;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -247,20 +264,22 @@
 .outputIcon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
 
 .outputTitle {
-  font-size: 12px;
-  font-weight: 700;
-  color: #030c1e;
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: left;
 }
 
 .outputDetail {
-  font-size: 11px;
-  color: #9ca3af;
+  font-size: var(--font-detail);
+  color: var(--color-muted);
   margin-top: 2px;
-  line-height: 1.45;
+  line-height: var(--line-body);
+  text-align: left;
 }
 
 /* ─── Use cases slide ────────────────────────────── */
-.useCasesSlide { gap: 14px; }
+.useCasesSlide { gap: 14px; align-items: flex-start; }
 
 .useCaseGrid {
   display: grid;
@@ -278,7 +297,7 @@
   font-weight: 600;
 }
 
-/* ─── CTA slide ──────────────────────────────────── */
+/* ─── CTA slide — centred exception ─────────────── */
 .ctaSlide { align-items: center; }
 
 .ctaBlock {
@@ -292,17 +311,17 @@
 }
 
 .ctaTitle {
-  font-size: 20px;
+  font-size: var(--font-heading);
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: var(--line-heading);
   margin: 0;
-  
 }
 
 .ctaText {
-  color: #051530;
-  font-size: 13px;
-  line-height: 1.6;
+  color: var(--color-muted);
+  font-size: var(--font-body);
+  line-height: var(--line-body);
   margin-bottom: 50px;
   max-width: 400px;
 }
@@ -372,7 +391,7 @@
 .arrowBtn:disabled { opacity: 0.3; }
 
 /* ─── Steps slide ────────────────────────────────── */
-.stepsSlide { background: #f0faf4; }
+.stepsSlide { background: white; }
 
 .stepsList {
   display: flex;
@@ -402,26 +421,27 @@
 }
 
 .stepBody { display: flex; flex-direction: column; gap: 2px; }
-.stepLabel { font-size: 14px; font-weight: 600; color: #1f2328; }
-.stepDetail { font-size: 12px; color: #57606a; line-height: 1.5; }
+.stepLabel { font-size: var(--font-body);   font-weight: 600; color: var(--color-text);  }
+.stepDetail { font-size: var(--font-detail); color: var(--color-muted); line-height: var(--line-body); }
 
 /* ─── Privacy slide ──────────────────────────────── */
-.privacySlide { background: #f0f4ff; }
+.privacySlide { background: white; }
 
 .privacyList {
   display: flex;
   flex-direction: column;
   gap: 14px;
   margin-top: 12px;
+  width: 100%;
 }
 
 .privacyItem {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 13px;
-  color: #1f2328;
-  line-height: 1.6;
+  font-size: var(--font-body);
+  color: var(--color-text);
+  line-height: var(--line-body);
 }
 
 .privacyIcon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
