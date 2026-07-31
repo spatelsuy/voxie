@@ -154,7 +154,7 @@ export default function VoiceRecorder({
         backendUrl:  "/api/transcribe-only",
         userName:    userName || "SunilK",
         silenceMs:   (silenceSec ?? 2) * 1000,
-        autoPauseMs: 10000,
+        autoPauseMs: 5000,
         onTranscript: ({ transcription, isFinal }) => {
           const text = (transcription || "").trim();
           if (text) {

@@ -185,7 +185,7 @@ export default function Home() {
               onLearnMore={() => setShowOnboarding(true)}
               liveTranscript={liveTranscript}
               onTranscriptChunk={handleTranscriptChunk}
-              silenceSec={settings.silenceSec ?? 1.5}
+              silenceSec={settings.silenceSec ?? 2}
               userName={settings.userName || "SunilK"}
             />
           )}
