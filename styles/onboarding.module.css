@@ -1,3 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Tip: for production, prefer next/font/google for Fraunces + Sora instead
+   of this @import — it self-hosts and avoids a render-blocking font fetch. */
+
 /* ─────────────────────────────────────────────────
    SINGLE SIZE CONTROL — change these two values to
    resize ALL storytelling slides at once.
@@ -8,26 +12,39 @@
   --slide-width: 100%;
   --slide-height: 85%;
   /* ── Typography scale (change here to affect all slides) ── */
-  --font-heading:  22px;   /* slide titles / eyebrows           */
-  --font-body:     15px;   /* main readable text                */
-  --font-detail:   13px;   /* secondary / supporting text       */
-  --font-label:    11px;   /* uppercase labels / meta           */
+  --font-heading:  22px;
+  --font-body:     15px;
+  --font-detail:   13px;
+  --font-label:    11px;
   --line-body:     1.6;
   --line-heading:  1.2;
-  --color-text:    #0f172a;
-  --color-muted:   #57606a;
-  --color-faint:   #8b949e;
+
+  /* ── Color tokens ──
+     Amber  = voice / input / raw speech
+     Lavender = structure / organized output
+     Ink = primary text, Mist = secondary text            */
+  --color-ink:      #1B1E2E;
+  --color-mist:     #6B6F85;
+  --color-faint:    #B5AF9C;
+  --color-amber:    #E08A2E;
+  --color-amber-bg: rgba(224,138,46,0.10);
+  --color-amber-line: rgba(224,138,46,0.28);
+  --color-lavender: #7C6FE0;
+  --color-lavender-bg: rgba(124,111,224,0.10);
+  --color-lavender-line: rgba(124,111,224,0.26);
+  --color-paper:    #FBF8F2;
+  --color-line:     #EDE6D8;
 
   width: 100%;
   height: 100%;
   max-width: var(--slide-width);
   margin: 0 auto;
   padding: 18px 20px 16px;
-  background: white;
-  border: 1px solid white;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
   border-radius: 20px;
-  color: var(--color-text);
-  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  color: var(--color-ink);
+  font-family: 'Sora', -apple-system, "Segoe UI", system-ui, sans-serif;
   font-size: var(--font-body);
   line-height: var(--line-body);
   overflow-y: auto;
@@ -45,33 +62,38 @@
 
 .progressLabel {
   font-size: 11px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--color-faint);
+  font-weight: 600;
 }
 
 .closeBtn {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid #242b3d;
-  background: #161b26;
-  color: #9ca3af;
+  border: 1px solid var(--color-line);
+  background: #ffffff;
+  color: var(--color-mist);
   flex: unset;
   min-height: unset;
   padding: 0;
   font-size: 12px;
+  cursor: pointer;
 }
 
-/* ─── Slide viewport — ONE rule controls height ── */
+/* ─── Slide viewport ─────────────────────────────── */
 .slideViewport {
   width: 100%;
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  scrollbar-width: none; /* Firefox */
 }
+.slideViewport::-webkit-scrollbar { display: none; } /* Chrome / Safari */
 
 /* ─── All slide types share same dimensions ──────── */
 .heroSlide,
@@ -80,8 +102,8 @@
 .useCasesSlide,
 .ctaSlide {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -89,215 +111,382 @@
   text-align: left;
 }
 
-/* ─── Hero slide — centred exception ─────────────── */
+/* ─── Hero slide ──────────────────────────────────── */
 .heroSlide {
   align-items: center;
   text-align: center;
   gap: 10px;
 }
 
-.heroLogo {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 6px;
+.heroIconWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  box-shadow: 0 0 0 10px var(--color-amber-bg);
 }
 
 .heroTitle {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
   font-size: calc(var(--font-heading) + 6px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
   line-height: var(--line-heading);
   margin: 0;
+  color: var(--color-ink);
 }
 
 .heroText {
   font-size: var(--font-body);
   line-height: var(--line-body);
   font-weight: 400;
-  color: var(--color-text);
+  color: var(--color-mist);
   margin: 0;
-  max-width: 420px;
+  max-width: 300px;
 }
 
-/* ─── Problem / Solution slide cards ─────────────── */
+.heroWave { width: 100%; max-width: 220px; margin: 6px 0 4px; }
+
+/* ─── Waveform ────────────────────────────────────── */
+.waveform {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: 34px;
+}
+
+.waveBar, .waveBarActive {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-amber);
+  min-height: 15%;
+}
+
+.waveBarActive {
+  animation: waveBeat 1.1s ease-in-out infinite;
+}
+
+@keyframes waveBeat {
+  0%, 100% { transform: scaleY(0.45); opacity: 0.75; }
+  50%      { transform: scaleY(1);    opacity: 1; }
+}
+
+/* ─── Problem slide ───────────────────────────────── */
 .slideCard {
   align-items: flex-start;
   gap: 20px;
   padding: 0 4px;
 }
 
-.problemSlide { border-left: none; }
-.solutionSlide { border-left: none;}
-
 .cardEyebrow {
-  font-size: var(--font-heading);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: var(--line-heading);
+  font-size: var(--font-label);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-amber);
   text-align: left;
   width: 100%;
 }
-
-.problemSlide .cardEyebrow { color: #ef4444; }
-.solutionSlide .cardEyebrow { color: #10b981; }
 
 .timelineFlow {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: var(--font-body);
-  font-weight: 400;
-  line-height: var(--line-body);
+  gap: 14px;
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: calc(var(--font-heading) - 3px);
+  line-height: 1.35;
 }
 
 .timelineStep {
   position: relative;
+  color: var(--color-ink);
+  opacity: 0;
+  animation-name: thoughtRise;
+  animation-duration: 2.4s;
+  animation-timing-function: ease;
+  animation-fill-mode: forwards;
+}
+
+/* Each line arrives, holds, then recedes — like a thought slipping away
+   as the next one takes its place. Stagger via nth-child so the JSX
+   never needs to know timing. */
+.timelineStep:nth-child(1) { animation-delay: 0.1s; }
+.timelineStep:nth-child(2) { animation-delay: 0.7s; }
+.timelineStep:nth-child(3) { animation-delay: 1.3s; }
+.timelineStep:nth-child(4) { animation-delay: 1.9s; }
+.timelineStep:nth-child(5) { animation-delay: 2.5s; }
+.timelineStep:nth-child(6) { animation-delay: 3.1s; }
+.timelineStep:nth-child(7) { animation-delay: 3.7s; }
+.timelineStep:nth-child(8) { animation-delay: 4.3s; }
+
+@keyframes thoughtRise {
+  0%   { opacity: 0;    transform: translateY(6px); }
+  18%  { opacity: 1;    transform: translateY(0); }
+  62%  { opacity: 1; }
+  100% { opacity: 0.38; }
+}
+
+/* The closing line is the one thought that sticks — it arrives like
+   the others, but stays fully lit instead of fading. */
+.timelineStepLast {
+  color: var(--color-lavender);
+  font-style: italic;
+  font-weight: 600;
   padding-left: 14px;
+  border-left: 2px solid var(--color-lavender-line);
+  animation-name: thoughtStays;
 }
 
-.timelineStep::before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: #ef4444;
-  font-weight: 700;
+@keyframes thoughtStays {
+  0%   { opacity: 0; transform: translateY(6px); }
+  22%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; }
 }
 
-.timelineStep0 { opacity: 0.95; }
-.timelineStep1 { opacity: 0.85; }
-.timelineStep2 { opacity: 0.72; }
-.timelineStep3 { opacity: 0.6; }
-.timelineStep4 { opacity: 1; color: #fca5a5; font-weight: 700; }
-
-.solutionLead {
-  font-size: var(--font-body);
-  font-weight: 500;
-  line-height: var(--line-body);
-  color: #0d57ec;
-  margin: 0;
+@media (prefers-reduced-motion: reduce) {
+  .timelineStep {
+    animation: none;
+    opacity: 1;
+  }
 }
 
-.solutionList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.solutionItem {
-  position: relative;
-  padding-left: 18px;
-  color: var(--color-muted);
-  font-size: var(--font-detail);
-  line-height: var(--line-body);
-}
-
-.solutionItem::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  color: #10b981;
-  font-weight: 700;
-}
-
-/* ─── Demo slides ────────────────────────────────── */
-.demoSlide { gap: 12px; }
-
+/* ─── Steps slide ─────────────────────────────────── */
 .sectionTitle {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
   font-size: var(--font-heading);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: var(--line-heading);
   text-align: left;
   width: 100%;
+  color: var(--color-ink);
+  margin-bottom: 6px;
 }
 
-.demoCard {
-  font-size: 16px;
-  letter-spacing: 0.08em;
-  color: #0c0c0c;
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+.stepItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.stepNumberCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stepNumber {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-line);
+  color: var(--color-mist);
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-left: 0%;
-  margin-right: 5%;
-  
+}
+
+.stepNumberFirst {
+  background: var(--color-amber);
+  color: #ffffff;
+}
+
+.stepConnector {
+  width: 2px;
+  flex: 1;
+  min-height: 18px;
+  background: var(--color-line);
+  margin: 4px 0;
+}
+
+.stepBody { display: flex; flex-direction: column; gap: 2px; padding-bottom: 18px; }
+.stepLabel { font-size: var(--font-body); font-weight: 600; color: var(--color-ink); }
+.stepDetail { font-size: var(--font-detail); color: var(--color-mist); line-height: var(--line-body); }
+
+/* ─── Demo slide — waveform morphs into chips ────────── */
+.demoSlide { gap: 12px; }
+
+.demoStage {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+}
+
+.demoInputState,
+.demoOutputState {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.demoStateHidden {
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  pointer-events: none;
 }
 
 .demoLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--font-label);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-muted);
+  letter-spacing: 0.1em;
+  color: var(--color-amber);
   font-weight: 700;
-  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.demoLabelCool {
+  font-size: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-lavender);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.demoWaveCard {
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--color-amber-bg);
+  border: 1px solid var(--color-amber-line);
+  margin-bottom: 14px;
 }
 
 .audioInput {
-  font-size: var(--font-body);
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 12.5px;
   font-weight: 400;
   line-height: var(--line-body);
-  color: var(--color-text);
+  color: var(--color-ink);
+  opacity: 0.85;
 }
 
 .outputList {
   display: flex;
   flex-direction: column;
+  gap: 10px;
   width: 100%;
-  margin: 0 auto;
 }
 
 .outputItem {
   display: flex;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid #0f0f0f;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--color-lavender-bg);
+  border: 1px solid var(--color-lavender-line);
+  animation: fadeSlide 0.5s ease-out both;
 }
 
-.outputItem:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.outputIcon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.outputIcon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+.outputContent { display: flex; flex-direction: column; gap: 1px; }
 
 .outputTitle {
-  font-size: var(--font-body);
-  font-weight: 600;
-  color: var(--color-text);
-  text-align: left;
+  font-size: var(--font-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-lavender);
 }
 
 .outputDetail {
   font-size: var(--font-detail);
-  color: var(--color-muted);
-  margin-top: 2px;
+  color: var(--color-ink);
   line-height: var(--line-body);
-  text-align: left;
 }
 
-/* ─── Use cases slide ────────────────────────────── */
-.useCasesSlide { gap: 14px; align-items: flex-start; }
+/* ─── Use cases slide ─────────────────────────────── */
+.useCasesSlide { gap: 16px; align-items: flex-start; }
 
 .useCaseGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.useCaseTag {
-  background: #d8e0f0;
-  border: 1px solid #c4cfeb;
-  padding: 10px 8px;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 12px;
+.useCaseTagWarm,
+.useCaseTagCool {
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
   font-weight: 600;
+  font-family: 'Sora', sans-serif;
 }
 
-/* ─── CTA slide — centred exception ─────────────── */
+.useCaseTagWarm {
+  background: var(--color-amber-bg);
+  border: 1px solid var(--color-amber-line);
+  color: var(--color-amber);
+}
+
+.useCaseTagCool {
+  background: var(--color-lavender-bg);
+  border: 1px solid var(--color-lavender-line);
+  color: var(--color-lavender);
+}
+
+/* ─── Privacy slide ───────────────────────────────── */
+.privacyList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.privacyItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--font-detail);
+  color: var(--color-mist);
+  line-height: var(--line-body);
+}
+
+.privacyIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-amber-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── CTA slide ───────────────────────────────────── */
 .ctaSlide { align-items: center; }
 
 .ctaBlock {
@@ -311,39 +500,47 @@
 }
 
 .ctaTitle {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
   font-size: var(--font-heading);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: var(--line-heading);
   margin: 0;
+  color: var(--color-ink);
 }
 
 .ctaText {
-  color: var(--color-muted);
+  color: var(--color-mist);
   font-size: var(--font-body);
   line-height: var(--line-body);
-  margin-bottom: 50px;
-  max-width: 400px;
+  margin-bottom: 32px;
+  max-width: 300px;
 }
 
-/* ─── Primary button ─────────────────────────────── */
+/* ─── Primary button ──────────────────────────────── */
 .primaryBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 38px;
-  padding: 0 20px;
+  height: 44px;
+  padding: 0 24px;
   border: none;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  border-radius: 999px;
+  background: var(--color-amber);
   color: #ffffff;
-  font-size: 13px;
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
   font-weight: 700;
   flex: unset;
   min-height: unset;
+  cursor: pointer;
+  transition: transform 0.15s ease;
 }
 
-/* ─── Footer ─────────────────────────────────────── */
+.primaryBtn:active { transform: scale(0.98); }
+
+/* ─── Footer ──────────────────────────────────────── */
 .footer {
   display: flex;
   justify-content: space-between;
@@ -353,19 +550,21 @@
 
 .dots {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
 .dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background: #2b3345;
-  transition: background 0.2s;
+  border-radius: 999px;
+  background: var(--color-line);
+  transition: all 0.2s ease;
 }
 
 .dotActive {
-  background: #6366f1;
+  width: 18px;
+  background: var(--color-amber);
 }
 
 .navRow {
@@ -373,76 +572,19 @@
   gap: 8px;
 }
 
-
 .arrowBtn {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  border: 1px solid #242b3d;
-  background: #161b26;
-  color: #f3f4f6;
+  border: 1px solid var(--color-line);
+  background: #ffffff;
+  color: var(--color-ink);
   font-size: 16px;
   font-weight: 700;
   flex: unset;
   min-height: unset;
   padding: 0;
+  cursor: pointer;
 }
 
-.arrowBtn:disabled { opacity: 0.3; }
-
-/* ─── Steps slide ────────────────────────────────── */
-.stepsSlide { background: white; }
-
-.stepsList {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 12px;
-}
-
-.stepItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.stepNumber {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #16a34a;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stepBody { display: flex; flex-direction: column; gap: 2px; }
-.stepLabel { font-size: var(--font-body);   font-weight: 600; color: var(--color-text);  }
-.stepDetail { font-size: var(--font-detail); color: var(--color-muted); line-height: var(--line-body); }
-
-/* ─── Privacy slide ──────────────────────────────── */
-.privacySlide { background: white; }
-
-.privacyList {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 12px;
-  width: 100%;
-}
-
-.privacyItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: var(--font-body);
-  color: var(--color-text);
-  line-height: var(--line-body);
-}
-
-.privacyIcon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-
+.arrowBtn:disabled { opacity: 0.3; cursor: default; }
