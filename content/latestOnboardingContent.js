@@ -54,9 +54,9 @@ export const ONBOARDING_PAGES = [
     type: "privacy",
     title: "Your privacy matters",
     points: [
-      "Audio is sent to Whisper for transcription only — it is not stored on any server.",
-      "All your tasks, events, and reminders are saved locally on your device.",
-      "Sync to Google Drive or Kahija DB is opt-in and under your control.",
+      "Your voice is sent to Groq's Whisper model to create a transcript, and that transcript is sent to Groq's AI to identify your tasks, events, and reminders.",
+      "By default, everything stays on your device — nothing is uploaded unless you turn on sync.",
+      "Sync is optional, for using Kahija across multiple devices. When enabled, your activities are encrypted before being stored — protecting your data in the event of a database breach.",
     ],
   },
   {

@@ -615,6 +615,37 @@ export default function useOrganizerDB() {
     return { itemsUpdated };
   }, []);
 
+  /**
+   * Clears all local data (recordings, A2T results, organizer items).
+   * Settings are intentionally preserved.
+   */
+  const clearLocalDB = useCallback(async () => {
+    // Revoke all blob URLs to free memory
+    setRecordings((prev) => {
+      prev.forEach((r) => { if (r.url) URL.revokeObjectURL(r.url); });
+      return [];
+    });
+    setA2tResults({});
+    setA2tStatuses({});
+    setItems([]);
+    computeDBWarning([]);
+
+    if (dbRef.current) {
+      const db = dbRef.current;
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(
+          [STORE_RECORDINGS, STORE_A2T, STORE_ITEMS],
+          "readwrite"
+        );
+        tx.objectStore(STORE_RECORDINGS).clear();
+        tx.objectStore(STORE_A2T).clear();
+        tx.objectStore(STORE_ITEMS).clear();
+        tx.oncomplete = resolve;
+        tx.onerror    = (e) => reject(e.target.error);
+      });
+    }
+  }, [computeDBWarning]);
+
   return {
     dbRef,
     recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
@@ -622,5 +653,6 @@ export default function useOrganizerDB() {
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
     getSyncSnapshot, mergeSyncData,
+    clearLocalDB,
   };
 }

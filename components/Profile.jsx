@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import styles from "../styles/profile.module.css";
+import ExportICSModal from "./ExportICSModal";
 
-export default function Profile({ onGetSyncData, onMergeSync, storageBackend, onSaveSetting }) {
+export default function Profile({ onGetSyncData, onMergeSync, storageBackend, onSaveSetting, onClearLocalDB, items }) {
   const { data: session, status } = useSession();
   const isSignedIn = status === "authenticated";
 
@@ -10,8 +11,10 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
   const [jsonLoading, setJsonLoading] = useState(false);
   const [syncState,   setSyncState]   = useState(null); // null | "uploading" | "downloading" | "done" | "error"
   const [syncMsg,     setSyncMsg]     = useState("");
-  const [clearState,  setClearState]  = useState(null);
-  const [clearMsg,    setClearMsg]    = useState("");
+  const [clearState,      setClearState]      = useState(null);
+  const [clearMsg,        setClearMsg]        = useState("");
+  const [localClearState, setLocalClearState] = useState(null); // null | "confirm" | "clearing" | "done" | "error"
+  const [showICSModal,    setShowICSModal]    = useState(false);
 
   const backend = storageBackend || "drive";
 
@@ -100,6 +103,28 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
     }
   }
 
+  /* ── Clear local DB ───────────────────────────────── */
+  async function handleClearLocal() {
+    if (localClearState === null) {
+      // First tap — show confirmation
+      setLocalClearState("confirm");
+      return;
+    }
+    if (localClearState === "confirm") {
+      // Second tap — actually clear
+      setLocalClearState("clearing");
+      try {
+        await onClearLocalDB();
+        setLocalClearState("done");
+        setTimeout(() => setLocalClearState(null), 3000);
+      } catch (err) {
+        console.error("Clear local DB failed:", err);
+        setLocalClearState("error");
+        setTimeout(() => setLocalClearState(null), 4000);
+      }
+    }
+  }
+
   const syncBusy = syncState === "uploading" || syncState === "downloading";
 
   return (
@@ -160,7 +185,7 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
                 </button>
               </div>
               <div className={styles.backendNote}>
-                End to end encrypt (in-transit and at-rest). Only you can decrypt.
+                End to end encrypt (in-transit and at-rest).
               </div>
             </>
           )}
@@ -197,6 +222,46 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
             </button>
           )}
 
+          {/* ── Export to Calendar — always visible ── */}
+          <div className={styles.sectionLabel} style={{ marginTop: 24 }}>Calendar export</div>
+          <button
+            className={styles.exportICSBtn}
+            onClick={() => setShowICSModal(true)}
+          >
+            Export Activities to Calendar (.ics)
+          </button>
+          <div className={styles.clearLocalNote}>
+            Preview and download an ICS file you can import into Google Calendar, Apple Calendar, or Outlook.
+          </div>
+
+          {/* ── Clear local data — always visible, no sign-in required ── */}
+          <div className={styles.sectionLabel} style={{ marginTop: 20 }}>Local storage</div>
+          <button
+            className={`${styles.clearLocalBtn} ${
+              localClearState === "confirm" ? styles.clearLocalBtnConfirm :
+              localClearState === "done"    ? styles.clearLocalBtnDone    :
+              localClearState === "error"   ? styles.clearLocalBtnError   : ""
+            }`}
+            onClick={handleClearLocal}
+            disabled={localClearState === "clearing" || localClearState === "done"}
+          >
+            {localClearState === "confirm"  ? "Tap again to confirm — this cannot be undone" :
+             localClearState === "clearing" ? "Clearing…" :
+             localClearState === "done"     ? "Local data cleared ✓" :
+             localClearState === "error"    ? "Failed — try again" :
+             "Clear Local Data"}
+          </button>
+          {localClearState === null && (
+            <div className={styles.clearLocalNote}>
+              Removes all recordings, transcripts and activities stored on this device. Your settings are kept. This does not affect any cloud backup.
+            </div>
+          )}
+          {localClearState === "confirm" && (
+            <div className={styles.clearLocalNote} style={{ color: "#c2410c" }}>
+              Tap the button above again to confirm. Or navigate away to cancel.
+            </div>
+          )}
+
           {/* ── View Sync JSON ── */}
           {/*<button
             className={styles.syncJsonBtn}
@@ -207,6 +272,14 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
           </button> */}
         </div>
       </div>
+
+      {/* ICS export modal */}
+      {showICSModal && (
+        <ExportICSModal
+          items={items || []}
+          onClose={() => setShowICSModal(false)}
+        />
+      )}
 
       {/* Sync JSON modal */}
       {syncJson !== null && (
