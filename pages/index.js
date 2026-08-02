@@ -41,6 +41,7 @@ export default function Home() {
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
     getSyncSnapshot, mergeSyncData,
+    clearLocalDB,
   } = useOrganizerDB();
 
   async function handleRecordingSaved(rec) {
@@ -214,6 +215,8 @@ export default function Home() {
               onMergeSync={mergeSyncData}
               storageBackend={settings.storageBackend}
               onSaveSetting={saveSetting}
+              onClearLocalDB={clearLocalDB}
+              items={items}
             />
           )}
           {activeTab === "settings" && (
