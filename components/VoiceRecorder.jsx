@@ -61,6 +61,8 @@ export default function VoiceRecorder({
   const canvasRef           = useRef(null);
   // Accumulates transcript synchronously — avoids stale React state closure
   const transcriptAccumRef  = useRef("");
+  // WakeLock sentinel — stored in a ref so it survives across re-renders
+  const wakeLockRef         = useRef(null);
 
   /* ── Timer ─────────────────────────────────────── */
   function startTimer() {
@@ -145,30 +147,29 @@ export default function VoiceRecorder({
     }
   }
 
-  let wakeLock = null;
 
+  /* ── Wake Lock ─────────────────────────────────── */
   async function requestWakeLock() {
+    if (!("wakeLock" in navigator)) return; // API not supported (HTTP or old browser)
     try {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => {
-        console.log('Wake Lock released');
+      wakeLockRef.current = await navigator.wakeLock.request("screen");
+      wakeLockRef.current.addEventListener("release", () => {
+        console.log("[WakeLock] released");
+        wakeLockRef.current = null;
       });
-      console.log('Wake Lock active');
+      console.log("[WakeLock] acquired");
     } catch (err) {
-      console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+      // Fails silently — screen may still lock but recording is unaffected
+      console.warn(`[WakeLock] could not acquire: ${err.name}: ${err.message}`);
     }
   }
 
-  // Release it when recording stops
   function releaseWakeLock() {
-    if (wakeLock !== null) {
-      wakeLock.release();
-      wakeLock = null;
-      console.log('Wake Lock is released');
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release(); // triggers the 'release' event above → sets ref to null
+      console.log("[WakeLock] release requested");
     }
   }
-
-
 
   /* ── Start recording ───────────────────────────── */
   async function startRecording() {
