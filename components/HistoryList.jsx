@@ -15,7 +15,8 @@ function formatDuration(sec) {
   return `${String(min).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-const API_URL = "/api/transcribe";
+const API_URL      = "/api/transcribe";       // audio → transcribe+analyse (fallback)
+const TEXT_API_URL = "/api/transcribe-text";  // text  → analyse only (preferred)
 
 /* ─── Confirmation dialog ─────────────────────────── */
 function ConfirmDialog({ recording, itemCount, onYes, onNo, onCancel }) {
@@ -86,14 +87,31 @@ export default function HistoryList({
     const today = new Date();
     const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-    const formData = new FormData();
-    formData.append("user_name", "SunilK");
-    formData.append("client_time", formattedDate);
-    formData.append("file", rec.blob, "recording.webm");
     try {
-      const res = await fetch(API_URL, { method: "POST", body: formData });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      const data = await res.json();
+      let data;
+
+      if (rec.text) {
+        // Transcript already saved — send text directly for analysis, no re-transcription needed
+        const formData = new FormData();
+        formData.append("user_name",   "SunilK");
+        formData.append("client_time", formattedDate);
+        formData.append("text",        rec.text);
+        const res = await fetch(TEXT_API_URL, { method: "POST", body: formData });
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        data = await res.json();
+        // Preserve the saved transcript inside the A2T result
+        data = { ...data, transcription_text: rec.text };
+      } else {
+        // No saved transcript — fall back to full audio re-transcription
+        const formData = new FormData();
+        formData.append("user_name",   "SunilK");
+        formData.append("client_time", formattedDate);
+        formData.append("file",        rec.blob, "recording.webm");
+        const res = await fetch(API_URL, { method: "POST", body: formData });
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        data = await res.json();
+      }
+
       await onSaveA2T(rec.id, data, rec.createdAt.toDateString());
       setExpandedA2T((p) => ({ ...p, [rec.id]: true }));
     } catch (err) {

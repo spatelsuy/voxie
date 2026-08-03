@@ -3,8 +3,6 @@ import styles from "../styles/recorder.module.css";
 import { ContinuousTranscriber } from "../lib/ContinuousTranscriber";
 
 /* ─── Constants ───────────────────────────────────── */
-const AUTO_A2T_MAX_SECONDS = 120;
-const AUTO_A2T_MAX_BYTES   = 2 * 1024 * 1024;
 
 /* ─── Rotating idle messages (label + hint pairs) ─── */
 const IDLE_MESSAGES = [
@@ -147,9 +145,35 @@ export default function VoiceRecorder({
     }
   }
 
+  let wakeLock = null;
+
+  async function requestWakeLock() {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => {
+        console.log('Wake Lock released');
+      });
+      console.log('Wake Lock active');
+    } catch (err) {
+      console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+    }
+  }
+
+  // Release it when recording stops
+  function releaseWakeLock() {
+    if (wakeLock !== null) {
+      wakeLock.release();
+      wakeLock = null;
+      console.log('Wake Lock is released');
+    }
+  }
+
+
+
   /* ── Start recording ───────────────────────────── */
   async function startRecording() {
     try {
+      requestWakeLock();
       const transcriber = new ContinuousTranscriber({
         backendUrl:  "/api/transcribe-only",
         userName:    userName || "SunilK",
@@ -234,6 +258,7 @@ export default function VoiceRecorder({
 
   /* ── Stop recording ────────────────────────────── */
   function stopRecording() {
+    releaseWakeLock();
     const t = transcriberRef.current;
     if (!t) return;
 
@@ -275,17 +300,17 @@ export default function VoiceRecorder({
         id: Date.now(), blob: fullBlob, url,
         size: fullBlob.size, duration, createdAt: new Date(),
         kind: "audio",
+        text: transcriptAccumRef.current || null,  // save transcript as safety copy
       };
 
-      const qualifies = duration <= AUTO_A2T_MAX_SECONDS && fullBlob.size <= AUTO_A2T_MAX_BYTES;
-
-      if (qualifies && onAutoA2T) {
+      // Always run auto-A2T — we already have the transcript from soft-stop segments,
+      // so audio size and recording duration are irrelevant to the text analysis call.
+      if (onAutoA2T) {
         setStatusText("Analysing…");
         if (onRecordingSaved) await onRecordingSaved(rec);
-        // Use the ref — it is always fully current, never stale from React closure
         onAutoA2T(rec, transcriptAccumRef.current || "");
       } else {
-        setStatusText(qualifies ? "Saved ✓" : "Saved ✓ — tap A2T in History");
+        setStatusText("Saved ✓");
         if (onRecordingSaved) onRecordingSaved(rec);
       }
     } catch (err) {
