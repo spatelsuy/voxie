@@ -20,8 +20,8 @@
 .circleLogo {
   position: relative;
   z-index: 2;
-  height: 44px;
-  width: 44px;
+  height: 22px;
+  width: 22px;
   object-fit: cover;
   border-radius: 50%;
   margin-top: 10px;
@@ -61,8 +61,8 @@
 /* ── The Big Circle ── */
 .circle {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
@@ -72,7 +72,7 @@
   justify-content: center;
   overflow: hidden;
   /* base idle style */
-  background: radial-gradient(circle at 40% 35%, #1e3a5f, #0f172a);
+  background: radial-gradient(circle at 40% 35%, #1e3a5f, #3f5079);
   box-shadow:
     0 0 0 12px rgba(99, 179, 237, 0.08),
     0 0 0 24px rgba(99, 179, 237, 0.04),
@@ -256,7 +256,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #222222;
+  background: #36483b;
   border: 1px solid rgba(255,255,255,0.15);
   color: #dddddd;
   font-size: 15px;
