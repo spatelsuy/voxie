@@ -5,14 +5,11 @@ import { ContinuousTranscriber } from "../lib/ContinuousTranscriber";
 /* ─── Constants ───────────────────────────────────── */
 
 /* ─── Rotating idle messages (label + hint pairs) ─── */
+
 const IDLE_MESSAGES = [
   {
     label: "Capture Your Thoughts Before They Disappear. Just Speak.",
-    hint:  "Speak naturally. Kahija turns your voice into tasks, reminders, events instantly.",
-  },
-  {
-    label: "Driving? Cooking? Just Tap and Talk.",
-    hint:  "Kahija listens hands-free and organises everything for you.",
+    hint:  "Speak naturally. Kahija turns your voice into organised activities, instantly.",
   },
   {
     label: "No Typing. No Notes App. Just Your Voice.",
@@ -20,14 +17,18 @@ const IDLE_MESSAGES = [
   },
   {
     label: "Your Voice Is the Fastest Way to Capture an Idea.",
-    hint:  "Tap the circle, speak, tap again. Your items appear in Due Date view automatically.",
+    hint:  "Tap the circle, speak, tap again. Your activities appear on your schedule automatically.",
   },
   {
-    label: "Never Forget a Task, Event, or Reminder Again.",
-    hint:  "Kahija extracts your intentions and places them on your schedule.",
+    label: "Never Miss an Activity Again.",
+    hint:  "Tasks, events, reminders — Kahija captures them all as one simple activity feed.",
   },
 ];
+
+
 const MESSAGE_INTERVAL_MS = 15000;
+const MAX_RECORD_SECONDS = 5 * 60; // 5 minutes of recording time, excluding actual pause duration
+const INITIAL_SILENCE_TIMEOUT_MS = 10000; // grace period before first word
 
 /* ─── Component ───────────────────────────────────── */
 export default function VoiceRecorder({
@@ -63,13 +64,28 @@ export default function VoiceRecorder({
   const transcriptAccumRef  = useRef("");
   // WakeLock sentinel — stored in a ref so it survives across re-renders
   const wakeLockRef         = useRef(null);
+  const neverSpokeHandledRef = useRef(false);
 
   /* ── Timer ─────────────────────────────────────── */
   function startTimer() {
     secondsRef.current  = 0;
     isPausedRef.current = false;
     timerIntervalRef.current = setInterval(() => {
-      if (!isPausedRef.current) secondsRef.current++;
+      if (!isPausedRef.current) {
+        secondsRef.current++;
+
+        if (
+          !neverSpokeHandledRef.current &&
+          secondsRef.current * 1000 >= INITIAL_SILENCE_TIMEOUT_MS &&
+          transcriberRef.current?.segmentCount === 0
+        ) {
+          neverSpokeHandledRef.current = true;
+          pauseForNoSpeech();
+        }
+        if (secondsRef.current >= MAX_RECORD_SECONDS){
+          stopRecording("limit");
+        }
+      }
     }, 1000);
   }
   function pauseTimer()  { isPausedRef.current = true; }
@@ -120,10 +136,12 @@ export default function VoiceRecorder({
   function startUITick() {
     uiIntervalRef.current = setInterval(() => {
       if (transcriberRef.current?.isRecording) {
-        setStatusText(formatDur(secondsRef.current));
+        const remaining = Math.max(MAX_RECORD_SECONDS - secondsRef.current, 0);
+        setStatusText(`${formatDur(remaining)} left`);
       }
     }, 300);
   }
+
   function stopUITick() { clearInterval(uiIntervalRef.current); uiIntervalRef.current = null; }
 
   /* ── Text modal ────────────────────────────────── */
@@ -212,6 +230,7 @@ export default function VoiceRecorder({
       transcriberRef.current     = transcriber;
       startTimeRef.current       = Date.now();
       transcriptAccumRef.current = "";   // reset accumulator for new session
+      neverSpokeHandledRef.current = false;
 
       startTimer();
       startWaveform();
@@ -224,6 +243,30 @@ export default function VoiceRecorder({
       console.error(err);
     }
   }
+
+  function pauseForNoSpeech() {
+    const t = transcriberRef.current;
+    if (!t || !t.isRecording || t._autoPaused) return;
+
+    // Pause both recorders, exactly like a real auto-pause would
+    if (t.sendRecorder?.state    === "recording") t.sendRecorder.pause();
+    if (t.archiveRecorder?.state === "recording") t.archiveRecorder.pause();
+
+    // Flag the session as auto-paused — deliberately NOT touching t._rafId,
+    // so the RMS loop keeps running and can detect voice to auto-resume.
+    // This reuses the exact same _autoPaused flag/branch the class already
+    // uses for its own silence-driven auto-pause — no changes to the class.
+    t._autoPaused    = true;
+    t._speaking      = false;
+    t._silenceStart  = null;
+    t._speechEndedAt = null;
+
+    // Reuse the same callback already wired up in startRecording() —
+    // identical UI behavior/messaging to a real auto-pause, no duplication.
+    t.onAutoPause();
+  }
+
+
 
   /* ── Pause / Resume ────────────────────────────── */
   function togglePause() {
@@ -258,7 +301,7 @@ export default function VoiceRecorder({
   }
 
   /* ── Stop recording ────────────────────────────── */
-  function stopRecording() {
+  function stopRecording(reason) {
     releaseWakeLock();
     const t = transcriberRef.current;
     if (!t) return;
@@ -279,7 +322,7 @@ export default function VoiceRecorder({
 
     setRecState("idle");
     setPauseLabel("Pause");
-    setStatusText("Transcribing…");
+    setStatusText(reason === "limit" ? "5-minute limit reached — saving…" : "Transcribing…");
   }
 
   /* ── Save (fired by _onStopped after last segment onstop) ──────── */
@@ -373,7 +416,7 @@ export default function VoiceRecorder({
     circleState === "recording"  ? statusText || "Recording…"                                            :
     circleState === "paused"     ? statusText                                                             :
     circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : statusText || "Processing…")  :
-    autoA2TStatus === "done"     ? "Done — check Inbox"                                                  :
+    autoA2TStatus === "done"     ? "Done — check History and Inbox"                                                  :
     autoA2TStatus === "error"    ? "Failed — try manually"                                               :
     idleMsg.label;
 
