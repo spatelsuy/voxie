@@ -42,7 +42,7 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
 
           <div className={styles.row}>
             <span className={styles.rowIcon}>🔇</span>
-            <span className={styles.rowLabel}>Auto-pause on silence [10 seconds]</span>
+            <span className={styles.rowLabel}>Auto-pause on silence [2 sec]</span>
             <button
               className={`${styles.toggle} ${styles.toggleOn} ${styles.toggleLocked}`}
               aria-label="Auto-pause always on"

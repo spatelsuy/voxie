@@ -202,16 +202,37 @@ function groupBySchedule(items, windowSize = 7) {
 }
 
 /* ─── Edit item modal ─────────────────────────────── */
+/* Parse an item.time string into { datePart: "YYYY-MM-DD", timePart: "HH:MM" }.
+   Returns empty strings for parts that can't be extracted. */
+function parseTimeString(str) {
+  if (!str || !str.trim()) return { datePart: "", timePart: "", unparseable: "" };
+  const s = str.trim();
+  // Matches: "YYYY-MM-DD", "YYYY-MM-DDTHH:MM", "YYYY-MM-DD HH:MM", "YYYY-MM-DDTHH:MM:SS"
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}))?/);
+  if (m) return { datePart: m[1], timePart: m[2] ? m[2].slice(0, 5) : "", unparseable: "" };
+  // Can't parse (e.g. "next Friday", "tomorrow 9am") — surface as hint
+  return { datePart: "", timePart: "", unparseable: s };
+}
+
 function EditItemModal({ item, onSave, onClose }) {
   const [title,    setTitle]    = useState(item.title    || "");
-  const [time,     setTime]     = useState(item.time     || "");
   const [priority, setPriority] = useState(item.priority || "low");
   const [context,  setContext]  = useState(item.context  || "");
 
+  const parsed = parseTimeString(item.time);
+  const [datePart, setDatePart] = useState(parsed.datePart);
+  const [timePart, setTimePart] = useState(parsed.timePart);
+  const unparseable = parsed.unparseable; // original AI string shown as hint, not editable
+
   function handleSave() {
+    // Recombine into ISO-like format: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DD"
+    let combinedTime = null;
+    if (datePart) {
+      combinedTime = timePart ? `${datePart}T${timePart}:00` : datePart;
+    }
     onSave(item.id, {
       title:    title.trim()   || item.title,
-      time:     time.trim()    || null,
+      time:     combinedTime,
       priority: item.type === "note" ? item.priority : priority,
       context:  context.trim() || null,
     });
@@ -221,24 +242,46 @@ function EditItemModal({ item, onSave, onClose }) {
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modal}>
-        <div className={styles.modalTitle}>Edit {item.type}</div>
+        <div className={styles.modalTitle}>Edit activity</div>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Title</span>
           <input className={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         {item.type !== "note" && (
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span className={styles.fieldLabel}>
-              Time / Date
-              {!item.time && <span className={styles.fieldHint}> — set a date to schedule this item</span>}
+              Date &amp; Time
+              {!datePart && !unparseable && <span className={styles.fieldHint}> — set a date to schedule this item</span>}
             </span>
-            <input
-              className={styles.input}
-              value={time}
-              placeholder="e.g. 2025-07-10T09:00 or 2025-07-10"
-              onChange={(e) => setTime(e.target.value)}
-            />
-          </label>
+            {unparseable && (
+              <div className={styles.fieldUnparseable}>
+                AI suggested: &ldquo;{unparseable}&rdquo; — please pick a date below
+              </div>
+            )}
+            <div className={styles.dateTimeRow}>
+              <input
+                type="date"
+                className={styles.inputDate}
+                value={datePart}
+                onChange={(e) => setDatePart(e.target.value)}
+              />
+              <input
+                type="time"
+                className={styles.inputTime}
+                value={timePart}
+                onChange={(e) => setTimePart(e.target.value)}
+              />
+            </div>
+            {datePart && (
+              <button
+                type="button"
+                className={styles.clearDateBtn}
+                onClick={() => { setDatePart(""); setTimePart(""); }}
+              >
+                Clear date &amp; time
+              </button>
+            )}
+          </div>
         )}
         {item.type !== "note" && (
           <label className={styles.field}>
@@ -249,7 +292,7 @@ function EditItemModal({ item, onSave, onClose }) {
           </label>
         )}
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Context</span>
+          <span className={styles.fieldLabel}>Context / Notes</span>
           <input className={styles.input} value={context} onChange={(e) => setContext(e.target.value)} />
         </label>
         <div className={styles.modalActions}>
@@ -482,13 +525,13 @@ export default function Dashboard({
                 className={`${styles.toggleBtn} ${viewMode === "scheduled" ? styles.toggleBtnActive : ""}`}
                 onClick={() => setViewMode("scheduled")}
               >
-                Due Date
+                By Due Date
               </button>
               <button
                 className={`${styles.toggleBtn} ${viewMode === "inbox" ? styles.toggleBtnActive : ""}`}
                 onClick={() => setViewMode("inbox")}
               >
-                Logged Date
+                By Logged Date
               </button>
             </div>
           </>
