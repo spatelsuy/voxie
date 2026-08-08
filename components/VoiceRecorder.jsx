@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../styles/recorder.module.css";
 import { ContinuousTranscriber } from "../lib/ContinuousTranscriber";
+import { getExampleDateLabel } from "../lib/SharedHelper.js";
 
 /* ─── Constants ───────────────────────────────────── */
 
@@ -65,6 +66,17 @@ export default function VoiceRecorder({
   // WakeLock sentinel — stored in a ref so it survives across re-renders
   const wakeLockRef         = useRef(null);
   const neverSpokeHandledRef = useRef(false);
+
+  const transcriptTextRef = useRef(null);
+  const [showTips, setShowTips] = useState(false);
+
+  useEffect(() => {
+    const el = transcriptTextRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [liveTranscript]);
+
 
   /* ── Timer ─────────────────────────────────────── */
   function startTimer() {
@@ -172,10 +184,10 @@ export default function VoiceRecorder({
     try {
       wakeLockRef.current = await navigator.wakeLock.request("screen");
       wakeLockRef.current.addEventListener("release", () => {
-        console.log("[WakeLock] released");
+        //console.log("[WakeLock] released");
         wakeLockRef.current = null;
       });
-      console.log("[WakeLock] acquired");
+      //console.log("[WakeLock] acquired");
     } catch (err) {
       // Fails silently — screen may still lock but recording is unaffected
       console.warn(`[WakeLock] could not acquire: ${err.name}: ${err.message}`);
@@ -185,7 +197,7 @@ export default function VoiceRecorder({
   function releaseWakeLock() {
     if (wakeLockRef.current) {
       wakeLockRef.current.release(); // triggers the 'release' event above → sets ref to null
-      console.log("[WakeLock] release requested");
+      //console.log("[WakeLock] release requested");
     }
   }
 
@@ -438,6 +450,26 @@ export default function VoiceRecorder({
   return (
     <div className={styles.wrap}>
 
+      {recState === "idle" && (
+        <div className={styles.tipsWrap}>
+          <div className={styles.earphoneHint}>
+            🎧 For best results, use a headset - totally optional
+          </div>
+          <button className={styles.tipsToggle} onClick={() => setShowTips((v) => !v)}>
+            {showTips ? "Hide tips" : "More tips"}
+          </button>
+          {showTips && (
+            <div className={styles.tipsExpanded}>
+              <div className={styles.tipRow}>🗣️ Speak at a normal volume - avoid mumbling or trailing off.</div>
+              <div className={styles.tipRow}>✋ Avoid tapping or bumping your device while recording.</div>
+              <div className={styles.tipRow}>⏸️ Pause briefly between separate thoughts.</div>
+              <div className={styles.tipRow}>📅 Say specific dates when you can - "{getExampleDateLabel()}" beats "sometime next week."</div>
+            </div>
+          )}
+        </div>
+      )}
+
+
       {/* Text input modal */}
       {isTextModalOpen && (
         <div className={styles.modalOverlay}>
@@ -517,7 +549,7 @@ export default function VoiceRecorder({
               <span className={styles.transcriptLabel}>Live Transcript</span>
               {isActiveRec && <span className={styles.transcriptDot} />}
             </div>
-            <div className={styles.transcriptText}>
+            <div className={styles.transcriptText} ref={transcriptTextRef}>
               {liveTranscript?.trim()
                 ? liveTranscript
                 : <span className={styles.transcriptPlaceholder}>Listening… transcript will appear here as you speak.</span>
