@@ -5,7 +5,7 @@ import { ONBOARDING_PAGES as OLD_PAGES } from "../content/onboardingContent";
 import { ONBOARDING_PAGES as NEW_PAGES } from "../content/latestOnboardingContent";
 const ONBOARDING_PAGES = USE_NEW_ONBOARDING ? NEW_PAGES : OLD_PAGES;
 import styles from "../styles/onboarding.module.css";
-
+import { getExampleDateLabel } from "../lib/SharedHelper.js";
 
 
 /* ─── Small inline icons (no external icon library needed) ─── */
@@ -103,6 +103,23 @@ function OnboardingSlide({ page, onAction }) {
     );
   }
 
+  if (page.type === "tips") {
+    return (
+      <section className={`${styles.slideCard} ${styles.tipsSlide}`}>
+        <div className={styles.sectionTitle}>{page.title}</div>
+        <div className={styles.tipsList}>
+          {page.points.map((point) => (
+            <div key={point.text} className={styles.tipItem}>
+              <span className={styles.tipIcon}>{point.icon}</span>
+              <span>{point.text.replace("{{exampleDate}}", getExampleDateLabel())}</span>
+            </div>
+          ))}
+
+
+        </div>
+      </section>
+    );
+  }
   if (page.type === "demo") {
     return <DemoSlide page={page} />;
   }

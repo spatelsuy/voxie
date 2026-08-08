@@ -82,6 +82,32 @@
   cursor: pointer;
 }
 
+.tipsList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.tipItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: var(--font-detail);
+  color: var(--color-mist);
+  line-height: var(--line-body);
+}
+
+.tipIcon {
+  flex-shrink: 0;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+
+
+
 /* ─── Slide viewport ─────────────────────────────── */
 .slideViewport {
   width: 100%;

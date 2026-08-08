@@ -12,7 +12,7 @@ export const ONBOARDING_PAGES = [
     type: "problem",
     eyebrow: "Sound familiar?",
     lines: [
-      "Driving to work — three things hit you at once.",
+      "On the way to work — three things hit you at once.",
       "Cooking dinner, hands full — a great idea shows up.",
       "Folding laundry, walking the dog, chasing the kids —",
       "same story, every time.",
@@ -28,6 +28,18 @@ export const ONBOARDING_PAGES = [
       { number: "1", label: "Tap the circle", detail: "Start recording with one tap." },
       { number: "2", label: "Speak naturally", detail: "Talk like you're thinking out loud. Pause mid-thought — Kahija waits for you." },
       { number: "3", label: "Tap to stop", detail: "Kahija transcribes and organises everything instantly." },
+    ],
+  },
+  {
+    id: "tips",
+    type: "tips",
+    title: "A few tips for best results",
+    points: [
+      { icon: "🎧", text: "Use a headset in noisy places - totally optional, but it helps." },
+      { icon: "🗣️", text: "Speak at a normal volume - avoid mumbling or trailing off." },
+      { icon: "✋", text: "Avoid tapping or bumping your device while recording." },
+      { icon: "⏸️", text: "Pause briefly between separate thoughts." },
+      { icon: "📅", text: 'Say specific dates when you can — "{{exampleDate}}" beats "sometime next week."' },
     ],
   },
   {
@@ -47,7 +59,7 @@ export const ONBOARDING_PAGES = [
     id: "use-cases",
     type: "useCases",
     title: "Built for when typing slows you down",
-    items: ["Driving", "Walking", "Cooking", "Shopping", "Exercising", "Brainstorming", "In a meeting", "Just woke up"],
+    items: ["Commuting", "Walking", "Cooking", "Shopping", "Exercising", "Brainstorming", "In a meeting", "Just woke up"],
   },
   {
     id: "privacy",
