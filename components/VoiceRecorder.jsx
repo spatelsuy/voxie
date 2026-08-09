@@ -65,7 +65,9 @@ export default function VoiceRecorder({
   const transcriptAccumRef  = useRef("");
   // WakeLock sentinel — stored in a ref so it survives across re-renders
   const wakeLockRef         = useRef(null);
+  const wantWakeLockRef = useRef(false);
   const neverSpokeHandledRef = useRef(false);
+  
 
   const transcriptTextRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
@@ -180,24 +182,33 @@ export default function VoiceRecorder({
 
   /* ── Wake Lock ─────────────────────────────────── */
   async function requestWakeLock() {
-    if (!("wakeLock" in navigator)) return; // API not supported (HTTP or old browser)
+    if (!("wakeLock" in navigator)) return;
+    wantWakeLockRef.current = true;
     try {
-      wakeLockRef.current = await navigator.wakeLock.request("screen");
-      wakeLockRef.current.addEventListener("release", () => {
-        //console.log("[WakeLock] released");
+      const sentinel = await navigator.wakeLock.request("screen");
+      if (!wantWakeLockRef.current) {
+        // stop() already ran before this resolved — don't leave an
+        // orphaned, untracked wake lock holding the screen awake.
+        sentinel.release();
+        //console.log("[WakeLock] acquired after stop — released immediately");
+        return;
+      }
+      wakeLockRef.current = sentinel;
+      sentinel.addEventListener("release", () => {
+        //console.log("[WakeLock] released...");
         wakeLockRef.current = null;
       });
-      //console.log("[WakeLock] acquired");
+      //console.log("[WakeLock] ...acquired");
     } catch (err) {
-      // Fails silently — screen may still lock but recording is unaffected
       console.warn(`[WakeLock] could not acquire: ${err.name}: ${err.message}`);
     }
   }
 
   function releaseWakeLock() {
+    wantWakeLockRef.current = false;
     if (wakeLockRef.current) {
-      wakeLockRef.current.release(); // triggers the 'release' event above → sets ref to null
-      //console.log("[WakeLock] release requested");
+      wakeLockRef.current.release();
+      console.log("[WakeLock] release requested");
     }
   }
 

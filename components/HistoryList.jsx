@@ -44,8 +44,8 @@ function ConfirmDialog({ recording, itemCount, onYes, onNo, onCancel }) {
               <button className={styles.dialogBtnSecondary} onClick={onCancel}>
                 Cancel
               </button>
-              <button className={styles.dialogBtnSecondary} onClick={onNo}>
-                Keep items
+              <button className={styles.dialogBtnKeep} onClick={onNo}>
+                Delete Recording Only
               </button>
               <button className={styles.dialogBtnDanger} onClick={onYes}>
                 Delete everything
