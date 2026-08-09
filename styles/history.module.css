@@ -275,3 +275,18 @@
   transition: background 0.2s;
 }
 .dialogBtnDanger:hover { background: var(--danger-hover); }
+
+.dialogBtnKeep {
+  flex: 1;
+  background: #86efac;
+  color: #14532d;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: unset;
+  transition: background 0.2s;
+}
+.dialogBtnKeep:hover { background: #4ade80; }
