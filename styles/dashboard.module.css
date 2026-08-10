@@ -88,39 +88,48 @@
 }
 
 /* section label */
-.sec {
+/* date group */
+.dateGroup { margin-bottom: 8px; }
+
+/* Combined "ACTIVITIES · Today" header row */
+.secRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+.secRow:first-of-type { margin-top: 0; }
+.secRowMuted { opacity: 0.6; }
+
+.secType {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
-  margin: 16px 0 8px;
 }
-.sec:first-of-type { margin-top: 0; }
-.secMuted { opacity: 0.6; }
 
-/* date group */
-.dateGroup { margin-bottom: 8px; }
-.dateLabel {
+.secDate {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
   background: #f1f5f9;
   border-radius: 8px;
-  padding: 5px 10px;
-  margin: 16px 0 8px;
-  display: inline-block;
+  padding: 3px 10px;
 }
-.dateLabelToday {
+
+.secDateToday {
   background: #eff6ff;
   color: #1d4ed8;
 }
-.dateLabelPastDue {
+
+.secDatePastDue {
   background: #fff0ee;
   color: #c0392b;
   border: 1px solid #fecaca;
 }
-.dateLabelUnscheduled {
+
+.secDateUnscheduled {
   background: #fafafa;
   color: #9ca3af;
   border: 1px dashed #d1d5db;
@@ -142,12 +151,17 @@
   gap: 12px;
   background: #ffffff;
   border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
+  padding: 6px 7px;
+  margin-bottom: 4px;
   border: 1px solid var(--border);
 }
 .rowCompleted {
   opacity: 0.72;
+}
+
+/* Past-due text colour — maroon on title */
+.rowPastDue .rowText {
+  color: #800000;
 }
 .rowTask {
   background: #f8fbff;
