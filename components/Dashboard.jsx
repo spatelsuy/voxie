@@ -62,53 +62,50 @@ function resolveScheduledDates(item, windowDays) {
   const rec = item.recurrence;
   const timeStr = item.time || "";
 
-  /* ── helpers ── */
-  // Does timeStr look like a full date or datetime?  e.g. "2025-07-05" or "2025-07-05T14:00"
-  const fullDateRe = /^\d{4}-\d{2}-\d{2}/;
+  const fullDateRe  = /^\d{4}-\d{2}-\d{2}/;
   const hasFullDate = fullDateRe.test(timeStr);
+  const isRecurring = rec?.is_recurring === true;
 
-  // Case 1: item.time contains a parseable date
-  if (hasFullDate) {
-    const ymd = timeStr.slice(0, 10); // "YYYY-MM-DD"
+  // Case 1: non-recurring item with a concrete date — place on that date only
+  if (hasFullDate && !isRecurring) {
+    const ymd = timeStr.slice(0, 10);
     return windowDays.includes(ymd) ? [ymd] : [];
   }
 
-  // Case 2: time-only or null, check recurrence
-  const isRecurring = rec?.is_recurring === true;
+  // Case 2: recurring — resolve start_date from recurrence field or fall back to item.time
+  if (isRecurring) {
+    // Prefer rec.start_date; fall back to the date part of item.time if not set
+    const startYMD  = rec.start_date || (hasFullDate ? timeStr.slice(0, 10) : null);
+    if (!startYMD) return []; // no anchor → Unscheduled
 
-  if (!isRecurring) {
-    // time-only + not recurring → Unscheduled
-    return [];
-  }
+    const endYMD    = rec.end_date || null;
+    const freq      = rec.frequency;
+    const dowName   = rec.day_of_week;
+    const startDate = ymdToDate(startYMD);
 
-  // is_recurring = true — need start_date to proceed
-  const startYMD = rec.start_date;
-  if (!startYMD) return []; // can't place without anchor → Unscheduled
+    const matches = [];
+    for (const ymd of windowDays) {
+      const d = ymdToDate(ymd);
+      if (d < startDate) continue;
+      if (endYMD && d > ymdToDate(endYMD)) continue;
 
-  const endYMD     = rec.end_date || null;
-  const freq       = rec.frequency;
-  const dowName    = rec.day_of_week; // e.g. "Monday"
-  const startDate  = ymdToDate(startYMD);
-
-  const matches = [];
-
-  for (const ymd of windowDays) {
-    const d = ymdToDate(ymd);
-    // Must be on or after start_date
-    if (d < startDate) continue;
-    // Must be on or before end_date (if set)
-    if (endYMD && d > ymdToDate(endYMD)) continue;
-
-    if (freq === "daily") {
-      matches.push(ymd);
-    } else if (freq === "weekly") {
-      if (dowName && WEEK_DAYS[d.getDay()] === dowName) matches.push(ymd);
-    } else if (freq === "monthly") {
-      if (d.getDate() === startDate.getDate()) matches.push(ymd);
+      if (freq === "daily") {
+        matches.push(ymd);
+      } else if (freq === "alternate days" || freq === "every 2 days" || freq === "bi-daily") {
+        // Every 2nd day from start_date — diff in days divisible by 2
+        const diffDays = Math.round((d - startDate) / 86400000);
+        if (diffDays % 2 === 0) matches.push(ymd);
+      } else if (freq === "weekly") {
+        if (dowName && WEEK_DAYS[d.getDay()] === dowName) matches.push(ymd);
+      } else if (freq === "monthly") {
+        if (d.getDate() === startDate.getDate()) matches.push(ymd);
+      }
     }
+    return matches;
   }
 
-  return matches;
+  // Case 3: time-only string, not recurring → Unscheduled
+  return [];
 }
 
 /* ─── Group items by recordingDate (Inbox view) ───── */

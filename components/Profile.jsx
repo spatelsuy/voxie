@@ -16,6 +16,9 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
   const [localClearState, setLocalClearState] = useState(null); // null | "confirm" | "clearing" | "done" | "error"
   const [showICSModal,    setShowICSModal]    = useState(false);
 
+  const [calState, setCalState] = useState(null); // null | "pushing" | "deleting" | "done" | "error"
+  const [calMsg,   setCalMsg]   = useState("");
+
   const backend = storageBackend || "drive";
 
   /* ── Auto sign-out when token refresh has failed ─── */
@@ -125,6 +128,24 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
     }
   }
 
+  async function handleRemoveKahijaCalendar() {
+    setCalState("deleting");
+    try {
+      const res = await fetch("/api/calendar/delete-all", { method: "DELETE" });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || `Failed (${res.status})`);
+      setCalState("done");
+      setCalMsg(body.deleted ? "Kahija calendar removed ✓" : "No Kahija calendar found");
+      setTimeout(() => { setCalState(null); setCalMsg(""); }, 4000);
+    } catch (err) {
+      console.error("[delete-kahija-calendar] failed:", err);
+      setCalState("error");
+      setCalMsg(`Error: ${err.message}`);
+      setTimeout(() => { setCalState(null); setCalMsg(""); }, 5000);
+    }
+  }
+
+
   const syncBusy = syncState === "uploading" || syncState === "downloading";
 
   return (
@@ -142,7 +163,11 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
         <div className={styles.card}>
 
           {/* ── Sign in / out ── */}
-          <div className={styles.cardTitle}>{isSignedIn ? `Signed in as ${session.user?.email || session.user?.name || "Google user"}` : "Login options"}</div>
+          <div className={styles.cardTitle}>
+            {isSignedIn ? 
+              `Signed in as ${session.user?.email || session.user?.name || "Google user"}` : "Login options"
+            }
+          </div>
           <div className={styles.cardText}>
             {!isSignedIn && (
               "Sign in to access your data anywhere, across devices."
@@ -190,52 +215,45 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
             </>
           )}
 
-          {/* ── Sync button ── */}
+          {/* ── Sync + Clear stored data — same row ── */}
           {isSignedIn && (
-            <button
-              className={`${styles.syncBtn} ${
-                syncState === "done"  ? styles.syncBtnDone  :
-                syncState === "error" ? styles.syncBtnError : ""
-              }`}
-              onClick={handleSync}
-              disabled={syncBusy}
-            >
-              {syncBusy
-                ? syncMsg
-                : syncState === "done"  ? syncMsg
-                : syncState === "error" ? syncMsg
-                : `Sync to ${backend === "supabase" ? "Kahija DB" : "Drive"}`}
-            </button>
+            <div className={styles.btnRow}>
+              <button
+                className={`${styles.syncBtn} ${
+                  syncState === "done"  ? styles.syncBtnDone  :
+                  syncState === "error" ? styles.syncBtnError : ""
+                }`}
+                onClick={handleSync}
+                disabled={syncBusy}
+              >
+                {syncBusy
+                  ? syncMsg
+                  : syncState === "done"  ? syncMsg
+                  : syncState === "error" ? syncMsg
+                  : `Sync to ${backend === "supabase" ? "Kahija DB" : "Drive"}`}
+              </button>
+              <button
+                className={`${styles.clearDriveBtn} ${
+                  clearState === "done"  ? styles.clearDriveBtnDone  :
+                  clearState === "error" ? styles.clearDriveBtnError : ""
+                }`}
+                onClick={handleClearDrive}
+                disabled={clearState === "clearing"}
+              >
+                {clearState === "clearing" ? "Clearing…" : clearState ? clearMsg : "Clear Stored Data"}
+              </button>
+            </div>
           )}
-
-          {/* ── Clear stored data ── */}
-          {isSignedIn && (
-            <button
-              className={`${styles.clearDriveBtn} ${
-                clearState === "done"  ? styles.clearDriveBtnDone  :
-                clearState === "error" ? styles.clearDriveBtnError : ""
-              }`}
-              onClick={handleClearDrive}
-              disabled={clearState === "clearing"}
-            >
-              {clearState === "clearing" ? "Clearing…" : clearState ? clearMsg : "Clear Stored Data"}
-            </button>
-          )}
-
-          {/* ── Export to Calendar — always visible ── */}
-          <div className={styles.sectionLabel} style={{ marginTop: 24 }}>Calendar export</div>
-          <button
-            className={styles.exportICSBtn}
-            onClick={() => setShowICSModal(true)}
-          >
-            Export Activities to Calendar (.ics)
-          </button>
-          <div className={styles.clearLocalNote}>
-            Preview and download an ICS file you can import into Google Calendar, Apple Calendar, or Outlook.
-          </div>
-
           {/* ── Clear local data — always visible, no sign-in required ── */}
-          <div className={styles.sectionLabel} style={{ marginTop: 20 }}>Local storage</div>
+          <div className={styles.sectionLabel} style={{ marginTop: 20 }}>
+            Local storage
+            <span className={styles.infoWrap}>
+              <span className={styles.infoIcon}>ⓘ</span>
+              <span className={styles.infoTooltip}>
+                Removes all recordings, transcripts and activities stored on this device. Your settings are kept. This does not affect any cloud backup.
+              </span>
+            </span>
+          </div>
           <button
             className={`${styles.clearLocalBtn} ${
               localClearState === "confirm" ? styles.clearLocalBtnConfirm :
@@ -251,16 +269,47 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
              localClearState === "error"    ? "Failed — try again" :
              "Clear Local Data"}
           </button>
-          {localClearState === null && (
-            <div className={styles.clearLocalNote}>
-              Removes all recordings, transcripts and activities stored on this device. Your settings are kept. This does not affect any cloud backup.
-            </div>
-          )}
           {localClearState === "confirm" && (
             <div className={styles.clearLocalNote} style={{ color: "#c2410c" }}>
               Tap the button above again to confirm. Or navigate away to cancel.
             </div>
           )}
+
+
+          {/* ── Export to Calendar — always visible ── */}
+          <div className={styles.sectionLabel} style={{ marginTop: 24 }}>
+            Calendar export
+            <span className={styles.infoWrap}>
+              <span className={styles.infoIcon}>ⓘ</span>
+              <span className={styles.infoTooltip}>
+                Preview and download an ICS file you can import into Google Calendar, Apple Calendar, or Outlook.
+              </span>
+            </span>
+          </div>
+          <button
+            className={styles.exportICSBtn}
+            onClick={() => setShowICSModal(true)}
+          >
+            Export Activities to Calendar (.ics)
+          </button>
+          {isSignedIn && (
+            <>
+              <div className={styles.sectionLabel} style={{ marginTop: 24 }}>Calendar sync</div>
+              <div className={styles.backendNote}>
+                Events with a date get pushed to a separate "From Kahija" calendar in your Google Calendar —
+                never mixed into your existing events.
+              </div>
+              <button
+                className={styles.clearDriveBtn}
+                onClick={handleRemoveKahijaCalendar}
+                disabled={calState === "deleting"}
+              >
+                {calState === "deleting" ? "Removing…" : calState ? calMsg : "Remove Kahija Calendar"}
+              </button>
+            </>
+          )}
+
+
 
           {/* ── View Sync JSON ── */}
           {/*<button
@@ -278,6 +327,7 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
         <ExportICSModal
           items={items || []}
           onClose={() => setShowICSModal(false)}
+          isSignedIn={isSignedIn}
         />
       )}
 

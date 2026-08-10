@@ -37,11 +37,14 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
       authorization: {
         params: {
-          // drive.appdata — hidden app folder, no access to user's files.
-          // Does not require Google verification review.
-          scope: "openid email profile",
+          // calendar — full access needed to create the "From Kahija" calendar
+          // and manage events within it.
+          // Note: requires Google OAuth verification for production apps.
+          // drive.appdata removed — Drive sync not in use.
+          scope: "openid email profile https://www.googleapis.com/auth/calendar",
           access_type: "offline",
           response_type: "code",
+          prompt: "consent",  // force re-consent so Google issues a new token with the updated scope
         },
       },
     }),
