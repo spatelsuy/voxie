@@ -62,13 +62,20 @@
   margin-bottom: 3px;
 }
 .cardMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-muted);
   margin-bottom: 10px;
 }
 
-/* result tags */
-.tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.cardMetaPipe {
+  color: var(--border);
+  font-size: 12px;
+  flex-shrink: 0;
+}
 
 /* right-aligned button group */
 .btnGroup { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }

@@ -419,38 +419,50 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
 }
 
 /* ─── Reusable section renderer ───────────────────── */
-function TypeSections({ grp, a2tResults, onDeleteItem, onStatusChange, setEditingItem, setSourceText, unscheduled = false }) {
+function TypeSections({ grp, a2tResults, onDeleteItem, onStatusChange, setEditingItem, setSourceText, unscheduled = false, pastDue = false, dateLabel, dateLabelClass }) {
   const activityItems = [
     ...grp.events,
     ...grp.tasks,
     ...grp.reminders,
   ];
-  const secClass = `${styles.sec} ${unscheduled ? styles.secMuted : ""}`;
 
   const renderRows = (items) =>
     items.map((item) => (
-      <ItemRow
-        key={item._occurrenceDate ? `${item.id}_${item._occurrenceDate}` : item.id}
-        item={item}
-        onDelete={onDeleteItem}
-        onStatusChange={onStatusChange}
-        onEdit={setEditingItem}
-        hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
-        onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
-      />
+      <div key={item._occurrenceDate ? `${item.id}_${item._occurrenceDate}` : item.id}
+        className={pastDue ? styles.rowPastDue : ""}
+      >
+        <ItemRow
+          item={item}
+          onDelete={onDeleteItem}
+          onStatusChange={onStatusChange}
+          onEdit={setEditingItem}
+          hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+          onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+        />
+      </div>
     ));
 
   return (
     <>
       {activityItems.length > 0 && (
         <div>
-          <div className={secClass}>Activities</div>
+          <div className={`${styles.secRow} ${unscheduled ? styles.secRowMuted : ""}`}>
+            <span className={styles.secType}>Activities</span>
+            {dateLabel && (
+              <span className={`${styles.secDate} ${dateLabelClass || ""}`}>{dateLabel}</span>
+            )}
+          </div>
           {renderRows(activityItems)}
         </div>
       )}
       {grp.notes.length > 0 && (
         <div>
-          <div className={secClass}>Notes</div>
+          <div className={`${styles.secRow} ${unscheduled ? styles.secRowMuted : ""}`}>
+            <span className={styles.secType}>Notes</span>
+            {dateLabel && activityItems.length === 0 && (
+              <span className={`${styles.secDate} ${dateLabelClass || ""}`}>{dateLabel}</span>
+            )}
+          </div>
           {renderRows(grp.notes)}
         </div>
       )}
@@ -548,10 +560,9 @@ export default function Dashboard({
             if (total === 0) return null;
             return (
               <div key={dateKey} className={styles.dateGroup}>
-                <div className={styles.dateLabel}>
-                  {dateKey === "unknown" ? "Inbox" : dayLabel(dateKey)}
-                </div>
-                <TypeSections grp={grp} {...rowProps} />
+                <TypeSections grp={grp} {...rowProps}
+                  dateLabel={dateKey === "unknown" ? "Inbox" : dayLabel(dateKey)}
+                />
               </div>
             );
           })
@@ -566,10 +577,11 @@ export default function Dashboard({
               if (total === 0) return null;
               return (
                 <div className={styles.dateGroup}>
-                  <div className={`${styles.dateLabel} ${styles.dateLabelPastDue}`}>
-                    Past Due
-                  </div>
-                  <TypeSections grp={p} {...rowProps} />
+                  <TypeSections grp={p} {...rowProps}
+                    dateLabel="Past Due"
+                    dateLabelClass={styles.secDatePastDue}
+                    pastDue
+                  />
                 </div>
               );
             })()}
@@ -580,10 +592,10 @@ export default function Dashboard({
               if (total === 0) return null;
               return (
                 <div key={ymd} className={styles.dateGroup}>
-                  <div className={`${styles.dateLabel} ${ymd === toYMD(new Date()) ? styles.dateLabelToday : ""}`}>
-                    {dayLabel(ymd)}
-                  </div>
-                  <TypeSections grp={grp} {...rowProps} />
+                  <TypeSections grp={grp} {...rowProps}
+                    dateLabel={dayLabel(ymd)}
+                    dateLabelClass={ymd === toYMD(new Date()) ? styles.secDateToday : ""}
+                  />
                 </div>
               );
             })}
@@ -595,13 +607,13 @@ export default function Dashboard({
               if (total === 0) return null;
               return (
                 <div className={styles.dateGroup}>
-                  <div className={`${styles.dateLabel} ${styles.dateLabelUnscheduled}`}>
-                    Unscheduled
-                  </div>
                   <div className={styles.unscheduledHint}>
                     No date set — tap ••• on an item to add a date and schedule it.
                   </div>
-                  <TypeSections grp={u} {...rowProps} unscheduled />
+                  <TypeSections grp={u} {...rowProps} unscheduled
+                    dateLabel="Unscheduled"
+                    dateLabelClass={styles.secDateUnscheduled}
+                  />
                 </div>
               );
             })()}

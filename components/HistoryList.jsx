@@ -197,18 +197,19 @@ export default function HistoryList({
               <div key={r.id} className={styles.card}>
                 <div className={styles.cardName}>{r.name}</div>
                 <div className={styles.cardMeta}>
-                  {isTextEntry
-                    ? `${formatSize(r.size)} • typed entry • ${r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                    : `${formatSize(r.size)} • ${formatDuration(r.duration)} • ${r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+                  <span>
+                    {isTextEntry
+                      ? `${formatSize(r.size)} • typed entry • ${r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                      : `${formatSize(r.size)} • ${formatDuration(r.duration)} • ${r.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+                  </span>
+                  {hasResult && (activityCount > 0 || noteCount > 0) && (
+                    <>
+                      <span className={styles.cardMetaPipe}>|</span>
+                      {activityCount > 0 && <span className={`${styles.tag} ${styles.tagActivity}`}>{activityCount} activit{activityCount > 1 ? "ies" : "y"}</span>}
+                      {noteCount     > 0 && <span className={`${styles.tag} ${styles.tagNote}`}>{noteCount} note{noteCount > 1 ? "s" : ""}</span>}
+                    </>
+                  )}
                 </div>
-
-                {/* Tags — only when A2T result exists */}
-                {hasResult && (
-                  <div className={styles.tags}>
-                    {activityCount > 0 && <span className={`${styles.tag} ${styles.tagActivity}`}>{activityCount} activit{activityCount > 1 ? "ies" : "y"}</span>}
-                    {noteCount     > 0 && <span className={`${styles.tag} ${styles.tagNote}`}>{noteCount} note{noteCount > 1 ? "s" : ""}</span>}
-                  </div>
-                )}
 
                 {/* Status badge for pending/failed — shown above buttons */}
                 {(isPending || isFailed) && !hasResult && (
