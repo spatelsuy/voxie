@@ -130,6 +130,58 @@
   color: #334155;
 }
 
+/* ── Selection summary bar ── */
+.summaryBar {
+  display: flex;
+  gap: 16px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.summaryItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.summaryDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Select-all row ── */
+.selectAllRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 6px;
+  margin-top: 12px;
+}
+
+.selectAllLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.selectedCount {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* ── Item list ── */
 .list {
   list-style: none;
@@ -142,7 +194,7 @@
 
 .row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 7px 10px;
@@ -155,11 +207,42 @@
   background: #fef3c7;
 }
 
+.rowDisabled {
+  opacity: 0.5;
+}
+
+/* Checkbox + title together */
+.rowCheckLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.rowCheck {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  accent-color: #3b82d4;
+  cursor: pointer;
+}
+
+/* Invisible spacer to align disabled rows with checked rows */
+.rowCheckPlaceholder {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  display: inline-block;
+}
+
 .rowTitle {
   flex: 1;
   color: var(--text-main);
   line-height: 1.4;
   word-break: break-word;
+  min-width: 0;
 }
 
 .rowDate {
@@ -231,7 +314,7 @@
   border-radius: 10px;
   background: #3b82d4;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   min-height: unset;
@@ -245,4 +328,31 @@
 
 .downloadBtnDone {
   background: #22c55e;
+}
+
+.pushBtn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: unset;
+  transition: background 0.2s;
+}
+
+.pushBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pushBtnDone {
+  background: #22c55e;
+}
+
+.pushBtnError {
+  background: #ef4444;
 }

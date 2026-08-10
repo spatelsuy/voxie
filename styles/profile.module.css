@@ -65,6 +65,47 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.infoWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoIcon {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: default;
+  line-height: 1;
+}
+
+.infoTooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2328;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.5;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: normal;
+  width: 220px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.infoWrap:hover .infoTooltip {
+  display: block;
 }
 
 .backendToggle {
@@ -122,9 +163,15 @@
   cursor: pointer;
 }
 
-.syncBtn {
-  width: 100%;
+.btnRow {
+  display: flex;
+  gap: 8px;
   margin-top: 8px;
+}
+
+.syncBtn {
+  flex: 1;
+  margin-top: 0;
   border: none;
   border-radius: 10px;
   background: #3b82d4;
@@ -147,8 +194,8 @@
 }
 
 .clearDriveBtn {
-  width: 100%;
-  margin-top: 6px;
+  flex: 1;
+  margin-top: 0;
   border: 1px solid #fca5a5;
   border-radius: 10px;
   background: #fff5f5;
