@@ -191,28 +191,11 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
             </button>
           )}
 
-          {/* ── Storage backend toggle — only when signed in ── */}
+          {/* ── Storage backend — Kahija DB only (Google Drive hidden for now) ── */}
           {isSignedIn && (
-            <>
-              <div className={styles.sectionLabel}>Storage backend</div>
-              <div className={styles.backendToggle}>
-                <button
-                  className={`${styles.backendBtn} ${backend === "drive" ? styles.backendBtnActive : ""}`}
-                  onClick={() => onSaveSetting("storageBackend", "drive")}
-                >
-                  Google Drive
-                </button>
-                <button
-                  className={`${styles.backendBtn} ${backend === "supabase" ? styles.backendBtnActive : ""}`}
-                  onClick={() => onSaveSetting("storageBackend", "supabase")}
-                >
-                  Kahija DB
-                </button>
-              </div>
-              <div className={styles.backendNote}>
-                End to end encrypt (in-transit and at-rest).
-              </div>
-            </>
+            <div className={styles.backendNote} style={{ marginTop: 12 }}>
+              Storage: <strong>Kahija DB</strong> — end to end encrypted (in-transit and at-rest).
+            </div>
           )}
 
           {/* ── Sync + Clear stored data — same row ── */}
@@ -230,7 +213,7 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
                   ? syncMsg
                   : syncState === "done"  ? syncMsg
                   : syncState === "error" ? syncMsg
-                  : `Sync to ${backend === "supabase" ? "Kahija DB" : "Drive"}`}
+                  : "Sync to Kahija DB"}
               </button>
               <button
                 className={`${styles.clearDriveBtn} ${
@@ -292,22 +275,7 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
           >
             Export Activities to Calendar (.ics)
           </button>
-          {isSignedIn && (
-            <>
-              <div className={styles.sectionLabel} style={{ marginTop: 24 }}>Calendar sync</div>
-              <div className={styles.backendNote}>
-                Events with a date get pushed to a separate "From Kahija" calendar in your Google Calendar —
-                never mixed into your existing events.
-              </div>
-              <button
-                className={styles.clearDriveBtn}
-                onClick={handleRemoveKahijaCalendar}
-                disabled={calState === "deleting"}
-              >
-                {calState === "deleting" ? "Removing…" : calState ? calMsg : "Remove Kahija Calendar"}
-              </button>
-            </>
-          )}
+          {/* Calendar sync section hidden for now */}
 
 
 

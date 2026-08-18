@@ -4,7 +4,7 @@ export const ONBOARDING_PAGES = [
     type: "hero",
     title: "Never lose a thought again.",
     description:
-      "Say it the moment it hits you. Kahija listens, transcribes, and turns your words into tasks, reminders, and notes — automatically.",
+      "Say it the moment it hits you. Kahija listens, transcribes, and turns your words into activities and notes - automatically.",
     cta: "Start talking — it's free",
   },
   {
