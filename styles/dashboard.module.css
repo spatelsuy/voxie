@@ -12,7 +12,7 @@
 .header {
   padding: 18px 20px 12px;
   background: #ffffff;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 0px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -573,3 +573,4 @@
   width: 52px;
 }
 .fab:hover { background: var(--success-hover); }
+

@@ -158,7 +158,7 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
         <div className={styles.header}>
           <div>
             <div className={styles.title}>Export to Calendar</div>
-            <div className={styles.sub}>Select items, then download or push to Google</div>
+            <div className={styles.sub}>Select items to download as an .ics file</div>
           </div>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -282,21 +282,7 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
           >
             {downloaded ? "Downloaded ✓" : `Download .ics (${selectedCount})`}
           </button>
-          {isSignedIn && (
-            <button
-              className={`${styles.pushBtn} ${
-                pushState === "done"  ? styles.pushBtnDone  :
-                pushState === "error" ? styles.pushBtnError : ""
-              }`}
-              onClick={handlePushToGoogle}
-              disabled={selectedCount === 0 || pushState === "pushing"}
-            >
-              {pushState === "pushing" ? pushMsg :
-               pushState === "done"    ? pushMsg :
-               pushState === "error"   ? pushMsg :
-               `Push to Google (${selectedCount})`}
-            </button>
-          )}
+          {/* Push to Google button hidden for now */}
         </div>
 
       </div>
