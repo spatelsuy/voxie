@@ -61,6 +61,50 @@
   color: var(--text-main);
   margin-bottom: 3px;
 }
+
+/* prefix + date laid out inline */
+.cardNameEdit {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0;
+  line-height: 1.4;
+}
+
+/* clickable prefix label */
+.prefixLabel {
+  cursor: pointer;
+  border-bottom: 1px dashed #b0bec5;
+  padding-bottom: 1px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.prefixLabel:hover {
+  color: #3b82d4;
+  border-color: #3b82d4;
+}
+
+/* inline edit input — matches the surrounding text style */
+.prefixInput {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  font-family: inherit;
+  border: none;
+  border-bottom: 2px solid #7c5cd8;
+  outline: none;
+  background: transparent;
+  padding: 0 2px 1px;
+  width: 10ch;
+  min-width: 4ch;
+  max-width: 18ch;
+}
+
+/* muted date suffix */
+.cardNameDate {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 13px;
+}
 .cardMeta {
   display: flex;
   align-items: center;

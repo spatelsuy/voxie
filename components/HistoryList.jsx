@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import styles from "../styles/history.module.css";
 import ResponseDisplay from "./ResponseDisplay";
 
@@ -67,14 +67,25 @@ function ConfirmDialog({ recording, itemCount, onYes, onNo, onCancel }) {
   );
 }
 
+/* ─── Helpers ─────────────────────────────────────── */
+/** Split "Recording Aug 22, 2026, 08:33:29 PM" → ["Recording", " Aug 22, 2026, 08:33:29 PM"] */
+function splitName(name) {
+  const spaceIdx = name.indexOf(" ");
+  if (spaceIdx === -1) return [name, ""];
+  return [name.slice(0, spaceIdx), name.slice(spaceIdx)];
+}
+
 /* ─── Component ───────────────────────────────────── */
 export default function HistoryList({
   recordings, a2tResults, a2tStatuses, items, dbWarning,
-  onDelete, onSaveA2T, onMarkFailed,
+  onDelete, onRename, onSaveA2T, onMarkFailed,
 }) {
   const [expandedA2T, setExpandedA2T] = useState({});
   const [a2tLoading,  setA2tLoading]  = useState({});
   const [confirmFor,  setConfirmFor]  = useState(null);
+  const [editingId,   setEditingId]   = useState(null);   // id of card whose prefix is being edited
+  const [editValue,   setEditValue]   = useState("");     // current text in the edit input
+  const inputRef = useRef(null);
 
   /* Transcribe a single recording */
   async function transcribeRec(rec) {
@@ -147,6 +158,25 @@ export default function HistoryList({
     setConfirmFor(null);                       // dismiss — delete nothing
   }
 
+  /* ── Inline prefix editing ── */
+  function startEditing(rec) {
+    const [prefix] = splitName(rec.name);
+    setEditingId(rec.id);
+    setEditValue(prefix);
+    // Focus happens via ref after re-render
+    setTimeout(() => inputRef.current?.select(), 0);
+  }
+
+  function commitEdit(id) {
+    const trimmed = editValue.trim();
+    if (trimmed && onRename) onRename(id, trimmed);
+    setEditingId(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
   const warnClass =
     dbWarning?.level === "critical" ? styles.warnCritical :
     dbWarning?.level === "warn"     ? styles.warnWarn     :
@@ -193,9 +223,44 @@ export default function HistoryList({
             const noteCount      = (a?.notes || []).length;
             const isTextEntry    = r.kind === "text";
 
+            const [prefix, dateSuffix] = splitName(r.name);
+            const isEditing = editingId === r.id;
+
             return (
               <div key={r.id} className={styles.card}>
-                <div className={styles.cardName}>{r.name}</div>
+                <div className={styles.cardName}>
+                  {isEditing ? (
+                    <span className={styles.cardNameEdit}>
+                      <input
+                        ref={inputRef}
+                        className={styles.prefixInput}
+                        value={editValue}
+                        maxLength={16}
+                        autoFocus
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEdit(r.id);
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                        onBlur={() => commitEdit(r.id)}
+                        aria-label="Edit label"
+                      />
+                      <span className={styles.cardNameDate}>{dateSuffix}</span>
+                    </span>
+                  ) : (
+                    <span className={styles.cardNameEdit}>
+                      <span
+                        className={styles.prefixLabel}
+                        onClick={() => startEditing(r)}
+                        title="Click to rename"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === "Enter" && startEditing(r)}
+                      >{prefix}</span>
+                      <span className={styles.cardNameDate}>{dateSuffix}</span>
+                    </span>
+                  )}
+                </div>
                 <div className={styles.cardMeta}>
                   <span>
                     {isTextEntry

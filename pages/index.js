@@ -41,7 +41,7 @@ export default function Home() {
 
   const {
     recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
-    addRecording, deleteRecording,
+    addRecording, deleteRecording, renameRecording,
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
     getSyncSnapshot, mergeSyncData,
@@ -218,6 +218,7 @@ export default function Home() {
               items={items}
               dbWarning={dbWarning}
               onDelete={deleteRecording}
+              onRename={renameRecording}
               onSaveA2T={saveA2TResult}
               onMarkFailed={markA2TFailed}
             />
