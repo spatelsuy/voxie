@@ -1,6 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "../styles/settings.module.css";
 
+const FONT_OPTIONS = [
+  { value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif", label: "System default" },
+  { value: "Arial, Helvetica, sans-serif",          label: "Arial" },
+  { value: "'Courier New', Courier, monospace",     label: "Courier New" },
+  { value: "Georgia, 'Times New Roman', serif",     label: "Georgia" },
+  { value: "Helvetica, Arial, sans-serif",          label: "Helvetica" },
+  { value: "Impact, Haettenschweiler, sans-serif",  label: "Impact" },
+  { value: "'Trebuchet MS', Helvetica, sans-serif", label: "Trebuchet MS" },
+  { value: "Tahoma, Geneva, sans-serif",            label: "Tahoma" },
+  { value: "Verdana, Geneva, sans-serif",           label: "Verdana" },
+  // Google Fonts (require the <link> in <Head>)
+  { value: "'Inter', sans-serif",                   label: "Inter" },
+  { value: "'Lato', sans-serif",                    label: "Lato" },
+  { value: "'Merriweather', Georgia, serif",        label: "Merriweather" },
+  { value: "'Roboto', sans-serif",                  label: "Roboto" },
+];
+
 export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange, onShowOnboarding }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(settings.userName);
@@ -98,6 +115,25 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
                 {settings.userName} ›
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className={styles.group}>
+          <div className={styles.groupLabel}>Appearance</div>
+
+          <div className={styles.row}>
+            <span className={styles.rowIcon}>🔤</span>
+            <span className={styles.rowLabel}>Font</span>
+            <select
+              className={styles.fontSelect}
+              value={settings.fontFamily || "system"}
+              onChange={(e) => onSettingChange("fontFamily", e.target.value)}
+            >
+              {FONT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 

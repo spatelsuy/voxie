@@ -34,6 +34,22 @@ function ymdToDate(str) {
   return new Date(y, m - 1, d);
 }
 
+function nthWeekdayOfMonth(year, monthIndex, weekdayIndex, n) {
+  if (n === -1) {
+    // "Last <weekday>" — walk backward from month-end to the last match
+    const lastDay = new Date(year, monthIndex + 1, 0);
+    const offset = (lastDay.getDay() - weekdayIndex + 7) % 7;
+    lastDay.setDate(lastDay.getDate() - offset);
+    return lastDay;
+  }
+  const firstDay = new Date(year, monthIndex, 1);
+  const offset = (weekdayIndex - firstDay.getDay() + 7) % 7;
+  const date = 1 + offset + (n - 1) * 7;
+  const result = new Date(year, monthIndex, date);
+  return result.getMonth() === monthIndex ? result : null; // guards "5th" not existing that month
+}
+
+
 /** Human-readable day label for a date key.
  *  Accepts both "YYYY-MM-DD" (scheduled view) and any Date-parseable string
  *  such as "Tue Jul 01 2025" (inbox view / recordingDate). */
@@ -98,7 +114,17 @@ function resolveScheduledDates(item, windowDays) {
       } else if (freq === "weekly") {
         if (dowName && WEEK_DAYS[d.getDay()] === dowName) matches.push(ymd);
       } else if (freq === "monthly") {
-        if (d.getDate() === startDate.getDate()) matches.push(ymd);
+        if (rec.week_of_month != null && dowName) {
+          const weekdayIndex = WEEK_DAYS.indexOf(dowName);
+          const n = rec.week_of_month === 5 ? -1 : rec.week_of_month; // 5th → last, since not every month has one
+          const target = nthWeekdayOfMonth(d.getFullYear(), d.getMonth(), weekdayIndex, n);
+          if (target && toYMD(target) === ymd) matches.push(ymd);
+        } else if (rec.day_of_month != null) {
+          if (d.getDate() === rec.day_of_month) matches.push(ymd);
+        }
+        else if (d.getDate() === startDate.getDate()) {
+          matches.push(ymd); // existing day-of-month behavior, unchanged
+        }
       }
     }
     return matches;
@@ -163,25 +189,34 @@ function groupBySchedule(items, windowSize = 7) {
       return;
     }
 
-    // Not in the window — check if it has a concrete past date
+    // Not in the window — decide where it belongs
     const timeStr = item.time || "";
+    const rec     = item.recurrence;
+
     if (fullDateRe.test(timeStr)) {
       const ymd = timeStr.slice(0, 10);
       if (ymd < today) {
-        // Has a real date that's already passed → Past Due
+        // Concrete date already passed → Past Due
         pastDue[item.type + "s"].push(item);
-        return;
       }
-    }
-
-    // Recurring with a start_date that is entirely in the past and has ended
-    const rec = item.recurrence;
-    if (rec?.is_recurring && rec.start_date && rec.end_date && rec.end_date < today) {
-      pastDue[item.type + "s"].push(item);
+      // Concrete date in the future but beyond window → skip (will appear when window reaches it)
       return;
     }
 
-    // Everything else → Unscheduled
+    if (rec?.is_recurring) {
+      if (rec.start_date && rec.end_date && rec.end_date < today) {
+        // Recurring range entirely in the past → Past Due
+        pastDue[item.type + "s"].push(item);
+        return;
+      }
+      if (rec.start_date) {
+        // Has a start_date (future or active) but no matches in window → skip
+        return;
+      }
+      // is_recurring but no start_date — can't place it → Unscheduled
+    }
+
+    // Truly dateless, non-recurring → Unscheduled
     unscheduled[item.type + "s"].push(item);
   });
 
@@ -472,7 +507,7 @@ function TypeSections({ grp, a2tResults, onDeleteItem, onStatusChange, setEditin
 
 /* ─── Main component ──────────────────────────────── */
 export default function Dashboard({
-  items, a2tResults, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems,
+  items, a2tResults, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems, scheduleWindow,
 }) {
   const [editingItem, setEditingItem] = useState(null);
   const [sourceText,  setSourceText]  = useState(null);
@@ -493,7 +528,7 @@ export default function Dashboard({
   /* ── grouping ── */
   const inboxGroups    = viewMode === "inbox"     ? groupByRecording(visibleItems) : null;
   const inboxDates     = inboxGroups ? Object.keys(inboxGroups) : [];
-  const scheduleResult = viewMode === "scheduled" ? groupBySchedule(visibleItems)  : null;
+  const scheduleResult = viewMode === "scheduled" ? groupBySchedule(visibleItems, scheduleWindow ?? 10) : null;
 
   /* ── shared row props factory ── */
   const rowProps = { a2tResults, onDeleteItem, onStatusChange, setEditingItem, setSourceText };

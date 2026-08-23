@@ -41,7 +41,7 @@ export const authOptions = {
           // and manage events within it.
           // Note: requires Google OAuth verification for production apps.
           // drive.appdata removed — Drive sync not in use.
-          scope: "openid email profile https://www.googleapis.com/auth/calendar",
+          scope: "openid email profile",
           access_type: "offline",
           response_type: "code",
           prompt: "consent",  // force re-consent so Google issues a new token with the updated scope
