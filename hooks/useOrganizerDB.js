@@ -648,10 +648,34 @@ export default function useOrganizerDB() {
     }
   }, [computeDBWarning]);
 
+  /**
+   * Rename the prefix part of a recording's name.
+   * The name is stored as "<prefix> <date>" — we replace only the prefix,
+   * keeping everything from the first space onward intact.
+   */
+  const renameRecording = useCallback(async (id, newPrefix) => {
+    let updatedRec = null;
+    setRecordings((prev) => {
+      const next = prev.map((r) => {
+        if (r.id !== id) return r;
+        const spaceIdx = r.name.indexOf(" ");
+        const datePart = spaceIdx !== -1 ? r.name.slice(spaceIdx) : "";
+        const renamed  = { ...r, name: newPrefix + datePart };
+        updatedRec = renamed;
+        return renamed;
+      });
+      return next;
+    });
+    if (dbRef.current && updatedRec) {
+      try { await dbSaveRecording(dbRef.current, updatedRec); }
+      catch (err) { console.error("Failed to rename recording:", err); }
+    }
+  }, []);
+
   return {
     dbRef,
     recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
-    addRecording, deleteRecording,
+    addRecording, deleteRecording, renameRecording,
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
     getSyncSnapshot, mergeSyncData,

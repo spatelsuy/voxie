@@ -88,27 +88,35 @@ function resolveScheduledDates(item, windowDays) {
     return windowDays.includes(ymd) ? [ymd] : [];
   }
 
-  // Case 2: recurring — resolve start_date from recurrence field or fall back to item.time
+  // Case 2: recurring
   if (isRecurring) {
-    // Prefer rec.start_date; fall back to the date part of item.time if not set
+    const freq = rec.frequency;
     const startYMD  = rec.start_date || (hasFullDate ? timeStr.slice(0, 10) : null);
-    if (!startYMD) return []; // no anchor → Unscheduled
+    const startDate = startYMD ? ymdToDate(startYMD) : null;
 
-    const endYMD    = rec.end_date || null;
-    const freq      = rec.frequency;
-    const dowName   = rec.day_of_week;
-    const startDate = ymdToDate(startYMD);
+    // These patterns are fully defined by the recurrence rule itself and don't
+    // need a start_date/time anchor to know which future dates match. Only
+    // "alternate days" genuinely needs an anchor, to compute odd/even parity.
+    const selfSufficient =
+      freq === "daily" ||
+      (freq === "weekly" && !!rec.day_of_week) ||
+      (freq === "monthly" && (rec.day_of_month != null || (rec.week_of_month != null && rec.day_of_week)));
+
+    if (!startDate && !selfSufficient) return []; // no anchor and no self-sufficient rule → Unscheduled
+
+    const endYMD  = rec.end_date || null;
+    const dowName = rec.day_of_week;
 
     const matches = [];
     for (const ymd of windowDays) {
       const d = ymdToDate(ymd);
-      if (d < startDate) continue;
+      if (startDate && d < startDate) continue;
       if (endYMD && d > ymdToDate(endYMD)) continue;
 
       if (freq === "daily") {
         matches.push(ymd);
       } else if (freq === "alternate days" || freq === "every 2 days" || freq === "bi-daily") {
-        // Every 2nd day from start_date — diff in days divisible by 2
+        if (!startDate) continue; // this one still genuinely needs an anchor
         const diffDays = Math.round((d - startDate) / 86400000);
         if (diffDays % 2 === 0) matches.push(ymd);
       } else if (freq === "weekly") {
@@ -116,14 +124,13 @@ function resolveScheduledDates(item, windowDays) {
       } else if (freq === "monthly") {
         if (rec.week_of_month != null && dowName) {
           const weekdayIndex = WEEK_DAYS.indexOf(dowName);
-          const n = rec.week_of_month === 5 ? -1 : rec.week_of_month; // 5th → last, since not every month has one
+          const n = rec.week_of_month === 5 ? -1 : rec.week_of_month;
           const target = nthWeekdayOfMonth(d.getFullYear(), d.getMonth(), weekdayIndex, n);
           if (target && toYMD(target) === ymd) matches.push(ymd);
         } else if (rec.day_of_month != null) {
           if (d.getDate() === rec.day_of_month) matches.push(ymd);
-        }
-        else if (d.getDate() === startDate.getDate()) {
-          matches.push(ymd); // existing day-of-month behavior, unchanged
+        } else if (startDate && d.getDate() === startDate.getDate()) {
+          matches.push(ymd); // legacy fallback for old records with no day_of_month field
         }
       }
     }
@@ -133,6 +140,7 @@ function resolveScheduledDates(item, windowDays) {
   // Case 3: time-only string, not recurring → Unscheduled
   return [];
 }
+
 
 /* ─── Group items by recordingDate (Inbox view) ───── */
 function groupByRecording(items) {
