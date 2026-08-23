@@ -650,16 +650,17 @@ export default function useOrganizerDB() {
 
   /**
    * Rename the prefix part of a recording's name.
-   * The name is stored as "<prefix> <date>" — we replace only the prefix,
-   * keeping everything from the first space onward intact.
+   * The date portion always starts at the first space before a month abbreviation.
+   * Everything before that is replaced with newPrefix.
    */
   const renameRecording = useCallback(async (id, newPrefix) => {
+    const monthRe = / (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/;
     let updatedRec = null;
     setRecordings((prev) => {
       const next = prev.map((r) => {
         if (r.id !== id) return r;
-        const spaceIdx = r.name.indexOf(" ");
-        const datePart = spaceIdx !== -1 ? r.name.slice(spaceIdx) : "";
+        const m        = monthRe.exec(r.name);
+        const datePart = m ? r.name.slice(m.index) : "";
         const renamed  = { ...r, name: newPrefix + datePart };
         updatedRec = renamed;
         return renamed;

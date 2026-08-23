@@ -68,11 +68,27 @@ function ConfirmDialog({ recording, itemCount, onYes, onNo, onCancel }) {
 }
 
 /* ─── Helpers ─────────────────────────────────────── */
-/** Split "Recording Aug 22, 2026, 08:33:29 PM" → ["Recording", " Aug 22, 2026, 08:33:29 PM"] */
-function splitName(name) {
+/** Build the date suffix string from a Date object — matches how names are originally created. */
+function dateSuffix(createdAt) {
+  return " " + createdAt.toLocaleString("en-US", {
+    month: "short", day: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
+  });
+}
+
+/**
+ * Extract the editable prefix from a stored name.
+ * The date suffix always starts at the first space followed by a 3-letter month
+ * abbreviation (Jan–Dec). Everything before that is the user's label.
+ * Falls back to splitting on the first space for legacy single-word names.
+ */
+function extractPrefix(name) {
+  const monthRe = / (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/;
+  const m = monthRe.exec(name);
+  if (m) return name.slice(0, m.index);
+  // fallback: split on first space
   const spaceIdx = name.indexOf(" ");
-  if (spaceIdx === -1) return [name, ""];
-  return [name.slice(0, spaceIdx), name.slice(spaceIdx)];
+  return spaceIdx === -1 ? name : name.slice(0, spaceIdx);
 }
 
 /* ─── Component ───────────────────────────────────── */
@@ -160,10 +176,8 @@ export default function HistoryList({
 
   /* ── Inline prefix editing ── */
   function startEditing(rec) {
-    const [prefix] = splitName(rec.name);
     setEditingId(rec.id);
-    setEditValue(prefix);
-    // Focus happens via ref after re-render
+    setEditValue(extractPrefix(rec.name));
     setTimeout(() => inputRef.current?.select(), 0);
   }
 
@@ -223,7 +237,8 @@ export default function HistoryList({
             const noteCount      = (a?.notes || []).length;
             const isTextEntry    = r.kind === "text";
 
-            const [prefix, dateSuffix] = splitName(r.name);
+            const prefix    = extractPrefix(r.name);
+            const suffix    = dateSuffix(r.createdAt);
             const isEditing = editingId === r.id;
 
             return (
@@ -245,7 +260,7 @@ export default function HistoryList({
                         onBlur={() => commitEdit(r.id)}
                         aria-label="Edit label"
                       />
-                      <span className={styles.cardNameDate}>{dateSuffix}</span>
+                      <span className={styles.cardNameDate}>{suffix}</span>
                     </span>
                   ) : (
                     <span className={styles.cardNameEdit}>
@@ -257,7 +272,7 @@ export default function HistoryList({
                         tabIndex={0}
                         onKeyDown={(e) => e.key === "Enter" && startEditing(r)}
                       >{prefix}</span>
-                      <span className={styles.cardNameDate}>{dateSuffix}</span>
+                      <span className={styles.cardNameDate}>{suffix}</span>
                     </span>
                   )}
                 </div>
