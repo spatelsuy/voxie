@@ -127,13 +127,23 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
             <span className={styles.rowLabel}>Font</span>
             <select
               className={styles.fontSelect}
-              value={settings.fontFamily || "system"}
+              value={settings.fontFamily || FONT_OPTIONS[0].value}
               onChange={(e) => onSettingChange("fontFamily", e.target.value)}
             >
               {FONT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
+          </div>
+
+          <div className={styles.row}>
+            <span className={styles.rowIcon}>📅</span>
+            <span className={styles.rowLabel}>Schedule window</span>
+            <div className={styles.stepper}>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.max(3, (settings.scheduleWindow ?? 10) - 1))}>−</button>
+              <span className={styles.stepVal}>{settings.scheduleWindow ?? 10}d</span>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.min(30, (settings.scheduleWindow ?? 10) + 1))}>+</button>
+            </div>
           </div>
         </div>
 
