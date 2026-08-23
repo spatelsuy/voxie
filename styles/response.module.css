@@ -3,7 +3,7 @@
 ───────────────────────────────────────────────── */
 
 .response {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: inherit;
 }
 
 /* ─── Planner header ─────────────────────────────── */

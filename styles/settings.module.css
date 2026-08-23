@@ -134,6 +134,20 @@
   font-family: inherit;
 }
 .nameInput:focus { border-color: var(--primary); }
+/* font select */
+.fontSelect {
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: #fff;
+  color: var(--text-main);
+  cursor: pointer;
+  outline: none;
+}
+.fontSelect:focus { border-color: var(--primary); }
+
 .nameSave {
   background: var(--primary);
   color: #fff;

@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "../styles/settings.module.css";
 
+const FONT_OPTIONS = [
+  { value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif", label: "System default" },
+  { value: "Arial, Helvetica, sans-serif",                 label: "Arial" },
+  { value: "'Courier New', Courier, monospace",            label: "Courier New" },
+  { value: "Georgia, 'Times New Roman', serif",            label: "Georgia" },
+  { value: "Helvetica, Arial, sans-serif",                 label: "Helvetica" },
+  { value: "Impact, Haettenschweiler, sans-serif",         label: "Impact" },
+  { value: "Tahoma, Geneva, sans-serif",                   label: "Tahoma" },
+  { value: "'Trebuchet MS', Helvetica, sans-serif",        label: "Trebuchet MS" },
+  { value: "Verdana, Geneva, sans-serif",                  label: "Verdana" },
+  { value: "'Inter', sans-serif",                          label: "Inter (Google)" },
+  { value: "'Lato', sans-serif",                           label: "Lato (Google)" },
+  { value: "'Merriweather', Georgia, serif",               label: "Merriweather (Google)" },
+  { value: "'Roboto', sans-serif",                         label: "Roboto (Google)" },
+];
+
 export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange, onShowOnboarding }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(settings.userName);
@@ -98,6 +114,35 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
                 {settings.userName} ›
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className={styles.group}>
+          <div className={styles.groupLabel}>Appearance</div>
+
+          <div className={styles.row}>
+            <span className={styles.rowIcon}>🔤</span>
+            <span className={styles.rowLabel}>Font</span>
+            <select
+              className={styles.fontSelect}
+              value={settings.fontFamily || "system"}
+              onChange={(e) => onSettingChange("fontFamily", e.target.value)}
+            >
+              {FONT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.row}>
+            <span className={styles.rowIcon}>📅</span>
+            <span className={styles.rowLabel}>Schedule window</span>
+            <div className={styles.stepper}>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.max(3, (settings.scheduleWindow ?? 10) - 1))}>−</button>
+              <span className={styles.stepVal}>{settings.scheduleWindow ?? 10}d</span>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.min(30, (settings.scheduleWindow ?? 10) + 1))}>+</button>
+            </div>
           </div>
         </div>
 

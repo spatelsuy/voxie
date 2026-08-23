@@ -1,5 +1,9 @@
 import Head from "next/head";
 import { useState, useEffect } from "react";
+
+const GOOGLE_FONTS_URL =
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&display=swap";
+
 import useOrganizerDB from "../hooks/useOrganizerDB";
 import TabBar         from "../components/TabBar";
 import Dashboard      from "../components/Dashboard";
@@ -43,6 +47,13 @@ export default function Home() {
     getSyncSnapshot, mergeSyncData,
     clearLocalDB,
   } = useOrganizerDB();
+
+  // Apply font whenever settings.fontFamily changes (must be after useOrganizerDB)
+  useEffect(() => {
+    const DEFAULT_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif";
+    const font = settings?.fontFamily || DEFAULT_FONT;
+    document.documentElement.style.setProperty("--app-font", font);
+  }, [settings?.fontFamily]);
 
   async function handleRecordingSaved(rec) {
     await addRecording(rec);
@@ -152,6 +163,7 @@ export default function Home() {
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
         <link rel="icon" type="image/png" href="/K_ico.png" />
+        <link rel="stylesheet" href={GOOGLE_FONTS_URL} />
       </Head>
 
       <div className={pageStyles.shell}>
@@ -175,6 +187,7 @@ export default function Home() {
               onStatusChange={updateItemStatus}
               onEditItem={updateItem}
               showCompletedItems={settings.showCompletedItems}
+              scheduleWindow={settings.scheduleWindow ?? 10}
             />
           )}
           {activeTab === "record" && !showOnboarding && (
