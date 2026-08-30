@@ -19,7 +19,7 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
   const [calState, setCalState] = useState(null); // null | "pushing" | "deleting" | "done" | "error"
   const [calMsg,   setCalMsg]   = useState("");
 
-  const backend = storageBackend || "drive";
+  const backend = storageBackend || "supabase";
 
   /* ── Auto sign-out when token refresh has failed ─── */
   useEffect(() => {

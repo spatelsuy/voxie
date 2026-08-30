@@ -1,6 +1,7 @@
 /* ─── Recorder ──────────────────────────────────────── */
 
 .wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -18,8 +19,13 @@
 
 
 .tipsWrap {
-  margin-top: 60px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding-top: 20px;
   text-align: center;
+  z-index: 2;
 }
 
 .tipsToggle {
