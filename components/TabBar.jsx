@@ -5,7 +5,8 @@ const TABS = [
   { id: "record",   icon: "🎙", label: "Record"   },
   { id: "history",  icon: "🕐", label: "History"  },
   { id: "profile",  icon: "👤", label: "Profile"  },
-  { id: "settings", icon: "⚙️", label: "Settings" },
+  { id: "settings", icon: "⚙",  label: "Settings" },
+  { id: "help",     icon: "?",  label: "Help"     },
 ];
 
 export default function TabBar({ active, onChange }) {

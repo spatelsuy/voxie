@@ -1,0 +1,56 @@
+/* ─── Help ──────────────────────────────────────── */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* body — technical reference below the FAQ accordion */
+.body {
+  padding: 16px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* section group */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHeading {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0 2px;
+}
+
+/* Q&A card */
+.card {
+  background: #f7f8fa;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.question {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.answer {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}

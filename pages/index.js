@@ -12,6 +12,7 @@ import VoiceRecorder  from "../components/VoiceRecorder";
 import HistoryList    from "../components/HistoryList";
 import Profile        from "../components/Profile";
 import Settings       from "../components/Settings";
+import Help           from "../components/Help";
 import pageStyles     from "../styles/page.module.css";
 
 const API_URL = "/api/transcribe";
@@ -31,7 +32,7 @@ export default function Home() {
   // Read ?tab= from URL after mount — avoids SSR/hydration mismatch
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get("tab");
-    if (["record","today","history","profile","settings"].includes(p)) {
+    if (["record","today","history","profile","settings","help"].includes(p)) {
       setActiveTab(p);
     }
   }, []);
@@ -241,6 +242,9 @@ export default function Home() {
               onSettingChange={saveSetting}
               onShowOnboarding={() => setShowOnboarding(true)}
             />
+          )}
+          {activeTab === "help" && (
+            <Help />
           )}
         </div>
 
