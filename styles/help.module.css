@@ -54,3 +54,15 @@
   color: var(--text-muted);
   line-height: 1.6;
 }
+
+/* ── Video visibility: desktop shows embed, mobile shows tap card ── */
+
+/* Desktop: show inline embed, hide tap card */
+.videoDesktop { display: block; }
+.videoMobile  { display: none;  }
+
+/* Mobile (≤ 640px): hide embed, show tap card */
+@media (max-width: 640px) {
+  .videoDesktop { display: none;  }
+  .videoMobile  { display: flex;  }
+}
