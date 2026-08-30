@@ -7,21 +7,23 @@ import { getExampleDateLabel } from "../lib/SharedHelper.js";
 
 /* ─── Rotating idle messages (label + hint pairs) ─── */
 
+// `lines` is an array of strings — each entry becomes a separate line.
+// One entry = single line. Two or more = line breaks between them.
 const IDLE_MESSAGES = [
   {
-    label: "Capture Your Thoughts Before They Disappear. Just Speak.",
+    lines: ["Capture Your Thoughts Before They Disappear.", "Just Speak."],
     hint:  "Speak naturally. Kahija turns your voice into organised activities, instantly.",
   },
   {
-    label: "No Typing. No Notes App. Just Your Voice.",
+    lines: ["No Typing. No Notes App.", "Just Your Voice."],
     hint:  "Say 'Remind me Friday at 3pm to call the doctor' — Kahija handles the rest.",
   },
   {
-    label: "Your Voice Is the Fastest Way to Capture an Idea.",
+    lines: ["Your Voice Is the Fastest Way to Capture an Idea."],
     hint:  "Tap the circle, speak, tap again. Your activities appear on your schedule automatically.",
   },
   {
-    label: "Never Miss an Activity Again.",
+    lines: ["Never Miss an Activity Again."],
     hint:  "Tasks, events, reminders — Kahija captures them all as one simple activity feed.",
   },
 ];
@@ -408,7 +410,7 @@ export default function VoiceRecorder({
     if (recState !== "idle") return;
     const id = setInterval(() => {
       setMsgVisible(false);
-      setTimeout(() => { setMsgIndex((i) => (i + 1) % IDLE_MESSAGES.length); setMsgVisible(true); }, 400);
+      setTimeout(() => { setMsgIndex((i) => (i + 1) % IDLE_MESSAGES.length); setMsgVisible(true); }, 300);
     }, MESSAGE_INTERVAL_MS);
     return () => clearInterval(id);
   }, [recState]);
@@ -436,12 +438,12 @@ export default function VoiceRecorder({
   const idleMsg = IDLE_MESSAGES[msgIndex];
 
   const circleLabel =
-    circleState === "recording"  ? statusText || "Recording…"                                            :
-    circleState === "paused"     ? statusText                                                             :
-    circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : statusText || "Processing…")  :
-    autoA2TStatus === "done"     ? "Done — check History and Inbox"                                                  :
-    autoA2TStatus === "error"    ? "Failed — try manually"                                               :
-    idleMsg.label;
+    circleState === "recording"  ? statusText || "Recording…"                                           :
+    circleState === "paused"     ? statusText                                                            :
+    circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : statusText || "Processing…") :
+    autoA2TStatus === "done"     ? "Done — check History and Inbox"                                     :
+    autoA2TStatus === "error"    ? "Failed — try manually"                                              :
+    null; // idle — rendered as two lines below
 
   const circleHint =
     circleState === "recording"  ? "Tap to stop"                  :
@@ -520,8 +522,8 @@ export default function VoiceRecorder({
         </div>
       )}
 
-      {/* ── Main stage ── */}
-      <div className={styles.stage}>
+      {/* ── Main stage — extra top padding when tips are expanded to avoid overlap ── */}
+      <div className={styles.stage} style={showTips ? { paddingTop: 180 } : undefined}>
         {/* Big circle */}
         <button
           className={`${styles.circle} ${styles[`circle_${circleState}`]}`}
@@ -550,7 +552,11 @@ export default function VoiceRecorder({
         </button>
 
         {/* Label + hint */}
-        <div className={`${styles.circleLabel} ${labelFadeClass}`}>{circleLabel}</div>
+        <div className={`${styles.circleLabel} ${labelFadeClass}`}>
+          {circleLabel !== null ? circleLabel : idleMsg.lines.map((line, i) => (
+            <span key={i}>{i > 0 && <br />}{line}</span>
+          ))}
+        </div>
         {circleHint && <div className={`${styles.circleHint} ${labelFadeClass}`}>{circleHint}</div>}
 
         {/* Live transcript box */}

@@ -98,6 +98,7 @@
   justify-content: center;
   gap: 0;
   padding: 40px 24px 80px;
+  transition: padding-top 0.25s ease;
 }
 
 /* ── The Big Circle ── */
