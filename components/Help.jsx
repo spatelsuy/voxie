@@ -7,7 +7,7 @@ const FONT_IMPORT = `
 
 const COLORS = {
   ink: "#1B1E2E", mist: "#6B6F85", faint: "#B5AF9C",
-  paper: "#FBF8F2", line: "#EDE6D8", amber: "#E08A2E",
+  paper: "#ffffff", line: "#EDE6D8", amber: "#E08A2E",
 };
 
 const ALL_SECTIONS = [
