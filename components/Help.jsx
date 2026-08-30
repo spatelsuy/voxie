@@ -102,18 +102,15 @@ function FAQRow({ item, isOpen, onToggle, globalIndex }) {
   );
 }
 
-// ← Add as many YouTube Shorts (or regular videos) as you like.
-const VIDEOS = [
-  { id: "kNzvPxKW4Qs", title: "Kahija — Getting Started" },
-  { id: "L1hy4aVdGFQ", title: "See Kahija in action" },
-];
+// ← Paste your playlist ID here (the list= value from your YouTube playlist URL)
+// https://www.youtube.com/watch?v=kNzvPxKW4Qs&list=PLNi8l1NAZMOg
+const PLAYLIST_ID    = "PLNi8l1NAZMOg";
+// ← First video in the playlist (v= value) — used as the starting video
+const FIRST_VIDEO_ID = "kNzvPxKW4Qs";
+
 
 export default function Help() {
-  const [openIndex,  setOpenIndex]  = useState(0);
-  const [videoIndex, setVideoIndex] = useState(0);
-
-  const prevVideo = () => setVideoIndex((i) => (i - 1 + VIDEOS.length) % VIDEOS.length);
-  const nextVideo = () => setVideoIndex((i) => (i + 1) % VIDEOS.length);
+  const [openIndex, setOpenIndex] = useState(0);
 
   // Count only item rows to map openIndex correctly
   let itemCounter = -1;
@@ -125,7 +122,7 @@ export default function Help() {
       <div style={{ background: COLORS.paper, display: "flex", justifyContent: "center", padding: "0 0 60px" }}>
         <div style={{ width: "90%", margin: "0 auto", padding: "40px 0 0" }}>
 
-          {/* ── Video carousel ── */}
+          {/* ── Playlist embed ── */}
           <div style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>
             Watch Kahija in action
           </div>
@@ -133,100 +130,61 @@ export default function Help() {
             See how Kahija turns your voice into organised activities.
           </div>
 
-          {/* video frame with overlaid chevron buttons */}
-          <div style={{ position: "relative", width: "100%", marginBottom: 12 }}>
-            {/* 16:9 aspect box — capped so Shorts don't go portrait-tall */}
+          {/* ── Desktop: inline embed ── */}
+          <div className={styles.videoDesktop} style={{
+            position: "relative", width: "100%", paddingBottom: "56.25%",
+            borderRadius: 16, overflow: "hidden",
+            border: `1px solid ${COLORS.line}`,
+            boxShadow: "0 4px 24px rgba(27,30,46,0.08)",
+            marginBottom: 44,
+          }}>
+            <iframe
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+              src={`https://www.youtube.com/embed/${FIRST_VIDEO_ID}?list=${PLAYLIST_ID}&listType=playlist&rel=0&modestbranding=1`}
+              title="Kahija videos"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+
+          {/* ── Mobile: tap-to-watch card — opens YouTube fullscreen, back button returns here ── */}
+          <a
+            className={styles.videoMobile}
+            href={`https://www.youtube.com/watch?v=${FIRST_VIDEO_ID}&list=${PLAYLIST_ID}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", gap: 14,
+              background: "#fff", borderRadius: 14,
+              border: `1px solid ${COLORS.line}`,
+              boxShadow: "0 2px 12px rgba(27,30,46,0.07)",
+              padding: "14px 16px", marginBottom: 44,
+              textDecoration: "none",
+            }}
+          >
+            {/* YouTube play icon */}
             <div style={{
-              position: "relative", width: "100%", paddingBottom: "56.25%",
-              maxHeight: 300, borderRadius: 16,
-              overflow: "hidden", border: `1px solid ${COLORS.line}`,
-              boxShadow: "0 4px 24px rgba(27,30,46,0.08)",
+              width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+              background: "#FF0000",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <iframe
-                key={VIDEOS[videoIndex].id}
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
-                src={`https://www.youtube.com/embed/${VIDEOS[videoIndex].id}`}
-                title={VIDEOS[videoIndex].title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+                <polygon points="5,3 19,12 5,21" />
+              </svg>
             </div>
-
-            {/* Left chevron — only when more than one video */}
-            {VIDEOS.length > 1 && (
-              <button
-                onClick={prevVideo}
-                aria-label="Previous video"
-                style={{
-                  position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: "rgba(255,255,255,0.92)", border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", zIndex: 2, transition: "background 0.15s, transform 0.15s",
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fff"}
-                onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.92)"}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={COLORS.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-            )}
-
-            {/* Right chevron */}
-            {VIDEOS.length > 1 && (
-              <button
-                onClick={nextVideo}
-                aria-label="Next video"
-                style={{
-                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: "rgba(255,255,255,0.92)", border: "none",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", zIndex: 2, transition: "background 0.15s",
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fff"}
-                onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.92)"}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={COLORS.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          {/* title, counter, dots */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginBottom: 44 }}>
-            <div style={{ fontFamily: "Sora, sans-serif", fontSize: 13, fontWeight: 600, color: COLORS.ink, textAlign: "center" }}>
-              {VIDEOS[videoIndex].title}
-            </div>
-            {VIDEOS.length > 1 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {/* dots */}
-                <div style={{ display: "flex", gap: 5 }}>
-                  {VIDEOS.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setVideoIndex(i)}
-                      aria-label={`Go to video ${i + 1}`}
-                      style={{
-                        width: i === videoIndex ? 20 : 6, height: 6,
-                        borderRadius: 99, border: "none", padding: 0,
-                        background: i === videoIndex ? COLORS.amber : "#d1c9b8",
-                        cursor: "pointer", transition: "width 0.25s ease, background 0.2s",
-                      }}
-                    />
-                  ))}
-                </div>
-                {/* counter */}
-                <span style={{ fontFamily: "Sora, sans-serif", fontSize: 11, color: COLORS.faint, letterSpacing: "0.04em" }}>
-                  {videoIndex + 1} / {VIDEOS.length}
-                </span>
+            <div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontSize: 14, fontWeight: 700, color: COLORS.ink, marginBottom: 3 }}>
+                Watch on YouTube
               </div>
-            )}
-          </div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontSize: 12, color: COLORS.mist, lineHeight: 1.4 }}>
+                Opens fullscreen · tap Back to return to Help
+              </div>
+            </div>
+            {/* right chevron */}
+            <svg style={{ marginLeft: "auto", flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={COLORS.faint} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
 
           {/* ── FAQ title ── */}
           <div style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>

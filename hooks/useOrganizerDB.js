@@ -47,6 +47,7 @@ export function dbSaveRecording(db, rec) {
       createdAt: rec.createdAt.toISOString(),
       kind: rec.kind || "audio",
       text: rec.text || null,
+      transcriptEditCount: rec.transcriptEditCount || 0,
     });
     tx.oncomplete = resolve;
     tx.onerror    = (e) => reject(e.target.error);
@@ -310,6 +311,7 @@ export default function useOrganizerDB() {
           createdAt: new Date(e.createdAt),
           kind: e.kind || "audio",
           text: e.text || null,
+          transcriptEditCount: e.transcriptEditCount || 0,
         }));
 
         const a2tMap      = {};
