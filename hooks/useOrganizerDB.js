@@ -673,12 +673,30 @@ export default function useOrganizerDB() {
     }
   }, []);
 
+  /* Update the transcript text stored on a recording (for re-analyse flow) */
+  const updateRecordingText = useCallback(async (id, newText) => {
+    let updatedRec = null;
+    setRecordings((prev) => {
+      const next = prev.map((r) => {
+        if (r.id !== id) return r;
+        updatedRec = { ...r, text: newText, transcriptEditCount: (r.transcriptEditCount || 0) + 1 };
+        return updatedRec;
+      });
+      return next;
+    });
+    if (dbRef.current && updatedRec) {
+      try { await dbSaveRecording(dbRef.current, updatedRec); }
+      catch (err) { console.error("Failed to update recording text:", err); }
+    }
+  }, []);
+
   return {
     dbRef,
     recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
     addRecording, deleteRecording, renameRecording,
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
+    updateRecordingText,
     getSyncSnapshot, mergeSyncData,
     clearLocalDB,
   };

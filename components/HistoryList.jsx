@@ -94,13 +94,17 @@ function extractPrefix(name) {
 /* ─── Component ───────────────────────────────────── */
 export default function HistoryList({
   recordings, a2tResults, a2tStatuses, items, dbWarning,
-  onDelete, onRename, onSaveA2T, onMarkFailed,
+  onDelete, onRename, onSaveA2T, onMarkFailed, onUpdateRecordingText,
 }) {
-  const [expandedA2T, setExpandedA2T] = useState({});
-  const [a2tLoading,  setA2tLoading]  = useState({});
-  const [confirmFor,  setConfirmFor]  = useState(null);
-  const [editingId,   setEditingId]   = useState(null);   // id of card whose prefix is being edited
-  const [editValue,   setEditValue]   = useState("");     // current text in the edit input
+  const [expandedA2T,    setExpandedA2T]    = useState({});
+  const [a2tLoading,     setA2tLoading]     = useState({});
+  const [confirmFor,     setConfirmFor]     = useState(null);
+  const [editingId,      setEditingId]      = useState(null);   // id of card whose prefix is being edited
+  const [editValue,      setEditValue]      = useState("");     // current text in the edit input
+  const [reanalyseRec,   setReanalyseRec]   = useState(null);   // recording being re-analysed
+  const [reanalyseText,  setReanalyseText]  = useState("");     // edited transcript in modal
+  const [reanalyseState, setReanalyseState] = useState(null);   // null | "loading" | "error"
+  const [reanalyseError, setReanalyseError] = useState("");
   const inputRef = useRef(null);
 
   /* Transcribe a single recording */
@@ -191,6 +195,51 @@ export default function HistoryList({
     setEditingId(null);
   }
 
+  /* ── Re-analyse ── */
+  function openReanalyse(rec) {
+    setReanalyseRec(rec);
+    setReanalyseText(rec.text || "");
+    setReanalyseState(null);
+    setReanalyseError("");
+  }
+
+  function closeReanalyse() {
+    if (reanalyseState === "loading") return;
+    setReanalyseRec(null);
+    setReanalyseState(null);
+    setReanalyseError("");
+  }
+
+  async function handleReanalyseSubmit() {
+    if (!reanalyseRec || !reanalyseText.trim()) return;
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    setReanalyseState("loading");
+    setReanalyseError("");
+    try {
+      const formData = new FormData();
+      formData.append("user_name",   "SunilK");
+      formData.append("client_time", formattedDate);
+      formData.append("text",        reanalyseText.trim());
+      const res = await fetch(TEXT_API_URL, { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
+      const data = await res.json();
+
+      // API succeeded — persist edited transcript, then replace items
+      if (onUpdateRecordingText) await onUpdateRecordingText(reanalyseRec.id, reanalyseText.trim());
+      await onSaveA2T(reanalyseRec.id, { ...data, transcription_text: reanalyseText.trim() }, reanalyseRec.createdAt.toDateString());
+
+      setExpandedA2T((p) => ({ ...p, [reanalyseRec.id]: true }));
+      setReanalyseRec(null);
+      setReanalyseState(null);
+    } catch (err) {
+      console.error("Re-analyse failed:", err);
+      setReanalyseState("error");
+      setReanalyseError(err.message);
+    }
+  }
+
   const warnClass =
     dbWarning?.level === "critical" ? styles.warnCritical :
     dbWarning?.level === "warn"     ? styles.warnWarn     :
@@ -206,6 +255,41 @@ export default function HistoryList({
           onNo={handleConfirmNo}
           onCancel={handleConfirmCancel}
         />
+      )}
+
+      {/* ── Re-analyse modal ── */}
+      {reanalyseRec && (
+        <div className={styles.overlay}>
+          <div className={styles.dialog} style={{ maxWidth: 420 }}>
+            <div className={styles.dialogTitle}>Edit &amp; Re-analyse</div>
+            <div className={styles.dialogBody}>
+              <p>Edit the transcript below, then tap <strong>Re-analyse</strong>. The existing activities for this recording will be replaced with new ones.</p>
+            </div>
+            <textarea
+              className={styles.reanalyseTextarea}
+              value={reanalyseText}
+              onChange={(e) => { setReanalyseText(e.target.value); setReanalyseError(""); }}
+              disabled={reanalyseState === "loading"}
+              rows={7}
+              placeholder="Transcript text…"
+            />
+            {reanalyseState === "error" && (
+              <div className={styles.reanalyseError}>{reanalyseError}</div>
+            )}
+            <div className={styles.dialogActions}>
+              <button className={styles.dialogBtnSecondary} onClick={closeReanalyse} disabled={reanalyseState === "loading"}>
+                Cancel
+              </button>
+              <button
+                className={styles.dialogBtnPrimary}
+                onClick={handleReanalyseSubmit}
+                disabled={reanalyseState === "loading" || !reanalyseText.trim()}
+              >
+                {reanalyseState === "loading" ? "Analysing…" : "Re-analyse"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className={styles.header}>
@@ -289,6 +373,14 @@ export default function HistoryList({
                       {noteCount     > 0 && <span className={`${styles.tag} ${styles.tagNote}`}>{noteCount} note{noteCount > 1 ? "s" : ""}</span>}
                     </>
                   )}
+                  {r.transcriptEditCount > 0 && (
+                    <>
+                      <span className={styles.cardMetaPipe}>|</span>
+                      <span className={`${styles.tag} ${styles.tagEdited}`} title={`Transcript re-analysed ${r.transcriptEditCount} time${r.transcriptEditCount > 1 ? "s" : ""}`}>
+                        ✏️ edited ×{r.transcriptEditCount}
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 {/* Status badge for pending/failed — shown above buttons */}
@@ -344,8 +436,15 @@ export default function HistoryList({
                           )
                         : isFailed  ? "Retry" : "A2T"}
                   </button>
+                  {r.text && (
+                    <button className={styles.btnReanalyse} onClick={() => openReanalyse(r)} title="Edit transcript and re-analyse" aria-label="Edit transcript and re-analyse">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                  )}
                   {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                  
                   <button className={styles.btnDelete} onClick={() => handleDeleteClick(r)}>
                     Delete
                   </button>
