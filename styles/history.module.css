@@ -342,3 +342,71 @@
 }
 .dialogBtnKeep:hover { background: #4ade80; }
 
+.dialogBtnPrimary {
+  flex: 1;
+  background: #7c5cd8;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: unset;
+  transition: background 0.2s;
+}
+.dialogBtnPrimary:hover    { background: #6d4ec4; }
+.dialogBtnPrimary:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+/* Re-analyse icon button on card — same size as .btnA2t */
+.btnReanalyse {
+  flex: none;
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid #7c5cd8;
+  color: #7c5cd8;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  min-height: unset;
+  transition: background 0.2s, color 0.2s;
+}
+.btnReanalyse:hover { background: #f5f0ff; }
+
+/* Edited badge in card meta */
+.tagEdited {
+  background: #fefce8;
+  color: #854d0e;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 99px;
+}
+
+/* Re-analyse modal textarea */
+.reanalyseTextarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  background: #f8fafc;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+.reanalyseTextarea:disabled { opacity: 0.6; }
+
+/* Re-analyse error message */
+.reanalyseError {
+  font-size: 13px;
+  color: #dc2626;
+  margin-bottom: 8px;
+}
+

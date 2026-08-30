@@ -45,6 +45,7 @@ export default function Home() {
     addRecording, deleteRecording, renameRecording,
     markA2TPending, markA2TFailed, saveA2TResult,
     deleteItem, updateItemStatus, updateItem, saveSetting,
+    updateRecordingText,
     getSyncSnapshot, mergeSyncData,
     clearLocalDB,
   } = useOrganizerDB();
@@ -222,6 +223,7 @@ export default function Home() {
               onRename={renameRecording}
               onSaveA2T={saveA2TResult}
               onMarkFailed={markA2TFailed}
+              onUpdateRecordingText={updateRecordingText}
             />
           )}
           {activeTab === "profile" && (
