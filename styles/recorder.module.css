@@ -225,18 +225,20 @@
 
 /* ── Label beneath circle ── */
 .circleLabel {
-  margin-top: 32px;
-  font-size: 22px;
+  margin-top: 28px;
+  font-size: 26px;
   font-weight: 700;
-  color: #073462;
-  letter-spacing: -0.01em;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
   text-align: center;
   min-height: 28px;
+  padding: 0 16px;
 }
 
 .circleHint {
-  margin-top: 8px;
-  font-size: 13px;
+  margin-top: 12px;
+  font-size: 14px;
   color: #64748b;
   text-align: center;
   letter-spacing: 0.01em;
