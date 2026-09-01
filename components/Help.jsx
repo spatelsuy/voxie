@@ -69,7 +69,7 @@ ALL_SECTIONS.forEach((section) => {
   section.items.forEach((item) => FLAT_ITEMS.push({ type: "item", ...item }));
 });
 
-function FAQRow({ item, isOpen, onToggle, globalIndex }) {
+function FAQRow({ item, isOpen, onToggle }) {
   return (
     <div style={{ borderBottom: `1px solid ${COLORS.line}` }}>
       <button
@@ -79,11 +79,11 @@ function FAQRow({ item, isOpen, onToggle, globalIndex }) {
           padding: "20px 4px", background: "none", border: "none", cursor: "pointer", textAlign: "left",
         }}
       >
-        <span style={{ fontFamily: "Sora, sans-serif", fontSize: 16.5, fontWeight: 600, color: COLORS.ink }}>
+        <span style={{ fontFamily: "var(--app-font)", fontSize: 16.5, fontWeight: 600, color: COLORS.ink }}>
           {item.q}
         </span>
         <span style={{
-          fontFamily: "Sora, sans-serif", fontSize: 22, color: COLORS.amber,
+          fontFamily: "var(--app-font)", fontSize: 22, color: COLORS.amber,
           transform: isOpen ? "rotate(45deg)" : "rotate(0deg)", transition: "transform 0.2s ease",
           flexShrink: 0, marginLeft: 16,
         }}>
@@ -92,7 +92,7 @@ function FAQRow({ item, isOpen, onToggle, globalIndex }) {
       </button>
       <div style={{ maxHeight: isOpen ? 300 : 0, overflow: "hidden", transition: "max-height 0.3s ease" }}>
         <p style={{
-          fontFamily: "Sora, sans-serif", fontSize: 14.5, lineHeight: 1.6, color: COLORS.mist,
+          fontFamily: "var(--app-font)", fontSize: 14.5, lineHeight: 1.6, color: COLORS.mist,
           padding: "0 4px 20px", margin: 0,
         }}>
           {item.a}
@@ -119,14 +119,25 @@ export default function Help() {
     <div className={styles.wrap}>
       <style>{FONT_IMPORT}</style>
 
+      {/* ── Header — matches Profile / Settings ── */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <div className={styles.title}>Help</div>
+          <div className={styles.sub}>Videos &amp; frequently asked questions</div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
+      </div>
+
+      <div className={styles.scrollBody}>
       <div style={{ background: COLORS.paper, display: "flex", justifyContent: "center", padding: "0 0 60px" }}>
-        <div style={{ width: "90%", margin: "0 auto", padding: "40px 0 0" }}>
+        <div style={{ width: "90%", margin: "0 auto", padding: "28px 0 0" }}>
 
           {/* ── Playlist embed ── */}
-          <div style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>
+          <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>
             Watch Kahija in action
           </div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 14, color: COLORS.faint, marginBottom: 20 }}>
+          <div style={{ fontFamily: "var(--app-font)", fontSize: 14, color: COLORS.faint, marginBottom: 20 }}>
             See how Kahija turns your voice into organised activities.
           </div>
 
@@ -154,7 +165,7 @@ export default function Help() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display: "flex", alignItems: "center", gap: 14,
+              alignItems: "center", gap: 14,
               background: "#fff", borderRadius: 14,
               border: `1px solid ${COLORS.line}`,
               boxShadow: "0 2px 12px rgba(27,30,46,0.07)",
@@ -173,10 +184,10 @@ export default function Help() {
               </svg>
             </div>
             <div>
-              <div style={{ fontFamily: "Sora, sans-serif", fontSize: 14, fontWeight: 700, color: COLORS.ink, marginBottom: 3 }}>
+              <div style={{ fontFamily: "var(--app-font)", fontSize: 14, fontWeight: 700, color: COLORS.ink, marginBottom: 3 }}>
                 Watch on YouTube
               </div>
-              <div style={{ fontFamily: "Sora, sans-serif", fontSize: 12, color: COLORS.mist, lineHeight: 1.4 }}>
+              <div style={{ fontFamily: "var(--app-font)", fontSize: 12, color: COLORS.mist, lineHeight: 1.4 }}>
                 Opens fullscreen · tap Back to return to Help
               </div>
             </div>
@@ -187,10 +198,10 @@ export default function Help() {
           </a>
 
           {/* ── FAQ title ── */}
-          <div style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>
+          <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>
             Frequently Asked Questions
           </div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 14, color: COLORS.faint, marginBottom: 28 }}>
+          <div style={{ fontFamily: "var(--app-font)", fontSize: 14, color: COLORS.faint, marginBottom: 28 }}>
             Everything you need to know about Kahija.
           </div>
 
@@ -200,7 +211,7 @@ export default function Help() {
               if (row.type === "heading") {
                 return (
                   <div key={`h-${i}`} style={{
-                    fontFamily: "Sora, sans-serif", fontSize: 11, fontWeight: 700,
+                    fontFamily: "var(--app-font)", fontSize: 11, fontWeight: 700,
                     textTransform: "uppercase", letterSpacing: "0.07em",
                     color: COLORS.faint, padding: "28px 4px 4px",
                   }}>
@@ -223,15 +234,16 @@ export default function Help() {
 
           {/* Footer */}
           <div style={{ marginTop: 40, textAlign: "center" }}>
-            <span style={{ fontFamily: "Sora, sans-serif", fontSize: 13.5, color: COLORS.faint }}>
+            <span style={{ fontFamily: "var(--app-font)", fontSize: 13.5, color: COLORS.faint }}>
               Still have questions?{" "}
             </span>
-            <span style={{ fontFamily: "Sora, sans-serif", fontSize: 13.5, color: COLORS.amber, fontWeight: 600, cursor: "pointer" }}>
+            <span style={{ fontFamily: "var(--app-font)", fontSize: 13.5, color: COLORS.amber, fontWeight: 600, cursor: "pointer" }}>
               Contact us
             </span>
           </div>
 
         </div>
+      </div>
       </div>
     </div>
   );
