@@ -1,6 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "../styles/settings.module.css";
 
+const TIMEZONE_OPTIONS = Intl.supportedValuesOf
+  ? Intl.supportedValuesOf("timeZone")
+  : [
+      "UTC",
+      "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+      "America/Anchorage", "America/Adak", "Pacific/Honolulu",
+      "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Moscow",
+      "Asia/Dubai", "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok",
+      "Asia/Singapore", "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai",
+      "Australia/Sydney", "Australia/Adelaide", "Australia/Perth",
+      "Pacific/Auckland", "Pacific/Fiji",
+      "Africa/Cairo", "Africa/Johannesburg", "America/Sao_Paulo",
+      "America/Argentina/Buenos_Aires", "America/Toronto", "America/Vancouver",
+    ];
+
 const FONT_OPTIONS = [
   { value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif", label: "System default" },
   { value: "Arial, Helvetica, sans-serif",          label: "Arial" },
@@ -19,6 +34,9 @@ const FONT_OPTIONS = [
 ];
 
 export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange, onShowOnboarding }) {
+  const localTimezone = typeof Intl !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : "UTC";
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(settings.userName);
 
@@ -115,6 +133,19 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
                 {settings.userName} ›
               </button>
             )}
+          </div>
+          <div className={styles.row}>
+            <span className={styles.rowIcon}>🌍</span>
+            <span className={styles.rowLabel}>Time zone</span>
+            <select
+              className={styles.fontSelect}
+              value={settings.userTimezone || localTimezone}
+              onChange={(e) => onSettingChange("userTimezone", e.target.value)}
+            >
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
           </div>
         </div>
 

@@ -94,8 +94,9 @@ export default function Home() {
     try {
 
       const formData = new FormData();
-      formData.append("user_name",   settings.userName || "SunilK");
-      formData.append("client_time", getFormattedDate());
+      formData.append("user_name",      settings.userName || "SunilK");
+      formData.append("user_timezone",  settings.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+      formData.append("client_time",    getFormattedDate());
       formData.append("text", fullTranscript);
 
       const res = await fetch(TEXT_API_URL, { method: "POST", body: formData, signal: controller.signal });
@@ -135,8 +136,9 @@ export default function Home() {
 
     try {
       const formData = new FormData();
-      formData.append("user_name", "SunilK");
-      formData.append("client_time", getFormattedDate());
+      formData.append("user_name",     settings.userName || "SunilK");
+      formData.append("user_timezone", settings.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+      formData.append("client_time",   getFormattedDate());
       formData.append("text", text);
 
       const res = await fetch(TEXT_API_URL, {
@@ -203,6 +205,7 @@ export default function Home() {
               onTranscriptChunk={handleTranscriptChunk}
               silenceSec={settings.silenceSec ?? 2}
               userName={settings.userName || "SunilK"}
+              userTimezone={settings.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
             />
           )}
           {activeTab === "record" && showOnboarding && (
