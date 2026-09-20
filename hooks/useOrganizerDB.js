@@ -260,6 +260,7 @@ export default function useOrganizerDB() {
     autoA2T: false,
     silenceSec: 2,
     userName: "SunilK",
+    userTimezone:    typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC",
     dbCreatedAt:     "",       // set once on first boot, never overwritten
     exportedAt:      "",       // updated on every sync/export
     storageBackend:  "supabase",  // "drive" | "supabase"

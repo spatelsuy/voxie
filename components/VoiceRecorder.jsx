@@ -44,6 +44,7 @@ export default function VoiceRecorder({
   onTranscriptChunk,  // (text, isFinal) => void — called per speech segment
   silenceSec,         // number — seconds of silence before cutting (default 1.5)
   userName,           // string — forwarded to the backend
+  userTimezone,       // string — IANA timezone, forwarded to the backend
 }) {
   const [recState,         setRecState]         = useState("idle"); // idle | recording | paused
   const [statusText,       setStatusText]        = useState("");
@@ -219,8 +220,9 @@ export default function VoiceRecorder({
     try {
       requestWakeLock();
       const transcriber = new ContinuousTranscriber({
-        backendUrl:  "/api/transcribe-only",
-        userName:    userName || "SunilK",
+        backendUrl:    "/api/transcribe-only",
+        userName:      userName || "SunilK",
+        userTimezone:  userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         silenceMs:   (silenceSec ?? 2) * 1000,
         autoPauseMs: 5000,
         onTranscript: ({ transcription, isFinal }) => {
