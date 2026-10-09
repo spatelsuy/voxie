@@ -3,7 +3,7 @@
 .nav {
   display: flex;
   border-top: 1px solid var(--border);
-  background: #ffffff;
+  background: var(--bg-color);
   padding: 6px 0 env(safe-area-inset-bottom, 8px);
   position: sticky;
   bottom: 0;

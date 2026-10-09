@@ -11,19 +11,30 @@ import OnboardingPanel from "../components/OnboardingPanel";
 import VoiceRecorder  from "../components/VoiceRecorder";
 import HistoryList    from "../components/HistoryList";
 import Profile        from "../components/Profile";
-import Settings       from "../components/Settings";
+import Settings, { LIGHT_COLOR_THEMES } from "../components/Settings";
 import Help           from "../components/Help";
 import pageStyles     from "../styles/page.module.css";
 
 const API_URL = "/api/transcribe";
 const TEXT_API_URL = "/api/transcribe-text";
 
-function getFormattedDate() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function getFormattedDate(timeZone) {
+  try {
+    const tz = timeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC");
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(new Date());
+  } catch {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 }
 
 export default function Home() {
@@ -50,12 +61,22 @@ export default function Home() {
     clearLocalDB,
   } = useOrganizerDB();
 
-  // Apply font whenever settings.fontFamily changes (must be after useOrganizerDB)
+  // Apply font and theme color whenever settings change (must be after useOrganizerDB)
   useEffect(() => {
     const DEFAULT_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif";
     const font = settings?.fontFamily || DEFAULT_FONT;
     document.documentElement.style.setProperty("--app-font", font);
   }, [settings?.fontFamily]);
+
+  useEffect(() => {
+    const themeId = settings?.themeColor || "pure-white";
+    const matched = LIGHT_COLOR_THEMES.find((t) => t.id === themeId) || LIGHT_COLOR_THEMES[0];
+    document.documentElement.style.setProperty("--bg-color", matched.bg);
+    document.documentElement.style.setProperty("--card-bg", matched.card);
+    if (matched.border) {
+      document.documentElement.style.setProperty("--border", matched.border);
+    }
+  }, [settings?.themeColor]);
 
   async function handleRecordingSaved(rec) {
     await addRecording(rec);
@@ -93,10 +114,11 @@ export default function Home() {
 
     try {
 
+      const tz = settings?.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       const formData = new FormData();
-      formData.append("user_name",      settings.userName || "SunilK");
-      formData.append("user_timezone",  settings.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-      formData.append("client_time",    getFormattedDate());
+      formData.append("user_name",      settings?.userName || "SunilK");
+      formData.append("user_timezone",  tz);
+      formData.append("client_time",    getFormattedDate(tz));
       formData.append("text", fullTranscript);
 
       const res = await fetch(TEXT_API_URL, { method: "POST", body: formData, signal: controller.signal });
@@ -135,10 +157,11 @@ export default function Home() {
     await addRecording(rec);
 
     try {
+      const tz = settings?.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       const formData = new FormData();
-      formData.append("user_name",     settings.userName || "SunilK");
-      formData.append("user_timezone", settings.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-      formData.append("client_time",   getFormattedDate());
+      formData.append("user_name",     settings?.userName || "SunilK");
+      formData.append("user_timezone", tz);
+      formData.append("client_time",   getFormattedDate(tz));
       formData.append("text", text);
 
       const res = await fetch(TEXT_API_URL, {
@@ -191,7 +214,7 @@ export default function Home() {
               onStatusChange={updateItemStatus}
               onEditItem={updateItem}
               showCompletedItems={settings.showCompletedItems}
-              scheduleWindow={settings.scheduleWindow ?? 10}
+              scheduleWindow={settings.scheduleWindow ?? 7}
             />
           )}
           {activeTab === "record" && !showOnboarding && (
@@ -222,6 +245,8 @@ export default function Home() {
               a2tStatuses={a2tStatuses}
               items={items}
               dbWarning={dbWarning}
+              userTimezone={settings?.userTimezone}
+              userName={settings?.userName}
               onDelete={deleteRecording}
               onRename={renameRecording}
               onSaveA2T={saveA2TResult}

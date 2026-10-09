@@ -465,24 +465,6 @@ export default function VoiceRecorder({
   return (
     <div className={styles.wrap}>
 
-      {recState === "idle" && (
-        <div className={styles.tipsWrap}>
-          <div className={styles.earphoneHint}>
-            🎧 For best results, use a headset - totally optional
-          </div>
-          <button className={styles.tipsToggle} onClick={() => setShowTips((v) => !v)}>
-            {showTips ? "Hide tips" : "More tips"}
-          </button>
-          {showTips && (
-            <div className={styles.tipsExpanded}>
-              <div className={styles.tipRow}>🗣️ Speak at a normal volume - avoid mumbling or trailing off.</div>
-              <div className={styles.tipRow}>✋ Avoid tapping or bumping your device while recording.</div>
-              <div className={styles.tipRow}>⏸️ Pause briefly between separate thoughts.</div>
-              <div className={styles.tipRow}>📅 Say specific dates when you can - "{getExampleDateLabel()}" beats "sometime next week."</div>
-            </div>
-          )}
-        </div>
-      )}
 
 
       {/* Text input modal */}
@@ -524,8 +506,26 @@ export default function VoiceRecorder({
         </div>
       )}
 
-      {/* ── Main stage — extra top padding when tips are expanded to avoid overlap ── */}
-      <div className={styles.stage} style={showTips ? { paddingTop: 180 } : undefined}>
+      {/* ── Main stage ── */}
+      <div className={styles.stage}>
+        {recState === "idle" && (
+          <div className={styles.tipsWrap}>
+            <div className={styles.earphoneHint}>
+              🎧 For best results, use a headset - totally optional
+            </div>
+            <button className={styles.tipsToggle} onClick={() => setShowTips((v) => !v)}>
+              {showTips ? "Hide tips" : "More tips"}
+            </button>
+            {showTips && (
+              <div className={styles.tipsExpanded}>
+                <div className={styles.tipRow}>🗣️ Speak at a normal volume - avoid mumbling or trailing off.</div>
+                <div className={styles.tipRow}>✋ Avoid tapping or bumping your device while recording.</div>
+                <div className={styles.tipRow}>⏸️ Pause briefly between separate thoughts.</div>
+                <div className={styles.tipRow}>📅 Say specific dates when you can - "{getExampleDateLabel()}" beats "sometime next week."</div>
+              </div>
+            )}
+          </div>
+        )}
         {/* Big circle */}
         <button
           className={`${styles.circle} ${styles[`circle_${circleState}`]}`}
