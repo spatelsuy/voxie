@@ -33,6 +33,19 @@ const FONT_OPTIONS = [
   { value: "'Roboto', sans-serif",                  label: "Roboto" },
 ];
 
+export const LIGHT_COLOR_THEMES = [
+  { id: "pure-white", label: "White",    bg: "#ffffff", card: "#ffffff", border: "#e2e8f0" },
+  { id: "slate",      label: "Slate",    bg: "#f8fafc", card: "#ffffff", border: "#e2e8f0" },
+  { id: "gray",       label: "Cool Gray",bg: "#f3f4f6", card: "#ffffff", border: "#e5e7eb" },
+  { id: "zinc",       label: "Zinc",     bg: "#fafafa", card: "#ffffff", border: "#e4e4e7" },
+  { id: "warm-cream", label: "Cream",    bg: "#fdfbf7", card: "#ffffff", border: "#eae5d9" },
+  { id: "soft-amber", label: "Amber",    bg: "#fffbeb", card: "#ffffff", border: "#fde68a" },
+  { id: "soft-sky",   label: "Sky",      bg: "#f0f9ff", card: "#ffffff", border: "#bae6fd" },
+  { id: "mint",       label: "Mint",     bg: "#f0fdf4", card: "#ffffff", border: "#bbf7d0" },
+  { id: "lavender",   label: "Lavender", bg: "#f5f3ff", card: "#ffffff", border: "#ddd6fe" },
+  { id: "rose",       label: "Rose",     bg: "#fff1f2", card: "#ffffff", border: "#fecdd3" },
+];
+
 export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange, onShowOnboarding }) {
   const localTimezone = typeof Intl !== "undefined"
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -167,13 +180,41 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
             </select>
           </div>
 
+          <div className={`${styles.row} ${styles.colorRow}`}>
+            <div className={styles.colorRowHeader}>
+              <span className={styles.rowIcon}>🎨</span>
+              <span className={styles.rowLabel}>Page Background</span>
+            </div>
+            <div className={styles.paletteGrid}>
+              {LIGHT_COLOR_THEMES.map((theme) => {
+                const isSelected = (settings.themeColor || "pure-white") === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    className={`${styles.colorSwatch} ${isSelected ? styles.colorSwatchActive : ""}`}
+                    onClick={() => onSettingChange("themeColor", theme.id)}
+                    title={theme.label}
+                    aria-label={`Select ${theme.label} theme`}
+                  >
+                    <span
+                      className={styles.swatchCircle}
+                      style={{ backgroundColor: theme.bg }}
+                    />
+                    <span className={styles.swatchLabel}>{theme.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className={styles.row}>
             <span className={styles.rowIcon}>📅</span>
             <span className={styles.rowLabel}>Schedule window</span>
             <div className={styles.stepper}>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.max(3, (settings.scheduleWindow ?? 10) - 1))}>−</button>
-              <span className={styles.stepVal}>{settings.scheduleWindow ?? 10}d</span>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.min(30, (settings.scheduleWindow ?? 10) + 1))}>+</button>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.max(3, (settings.scheduleWindow ?? 7) - 1))}>−</button>
+              <span className={styles.stepVal}>{settings.scheduleWindow ?? 7}d</span>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.min(30, (settings.scheduleWindow ?? 7) + 1))}>+</button>
             </div>
           </div>
         </div>

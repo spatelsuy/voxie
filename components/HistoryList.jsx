@@ -91,9 +91,28 @@ function extractPrefix(name) {
   return spaceIdx === -1 ? name : name.slice(0, spaceIdx);
 }
 
+function getFormattedDate(timeZone) {
+  try {
+    const tz = timeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC");
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(new Date());
+  } catch {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+}
+
 /* ─── Component ───────────────────────────────────── */
 export default function HistoryList({
-  recordings, a2tResults, a2tStatuses, items, dbWarning,
+  recordings, a2tResults, a2tStatuses, items, dbWarning, userTimezone, userName,
   onDelete, onRename, onSaveA2T, onMarkFailed, onUpdateRecordingText,
 }) {
   const [expandedA2T,    setExpandedA2T]    = useState({});
@@ -115,8 +134,8 @@ export default function HistoryList({
     }
 
     setA2tLoading((p) => ({ ...p, [rec.id]: true }));
-    const today = new Date();
-    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const tz = userTimezone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC");
+    const formattedDate = getFormattedDate(tz);
 
     try {
       let data;
@@ -124,9 +143,10 @@ export default function HistoryList({
       if (rec.text) {
         // Transcript already saved — send text directly for analysis, no re-transcription needed
         const formData = new FormData();
-        formData.append("user_name",   "SunilK");
-        formData.append("client_time", formattedDate);
-        formData.append("text",        rec.text);
+        formData.append("user_name",     userName || "SunilK");
+        formData.append("user_timezone", tz);
+        formData.append("client_time",   formattedDate);
+        formData.append("text",          rec.text);
         const res = await fetch(TEXT_API_URL, { method: "POST", body: formData });
         if (!res.ok) throw new Error(`Status ${res.status}`);
         data = await res.json();
@@ -135,9 +155,10 @@ export default function HistoryList({
       } else {
         // No saved transcript — fall back to full audio re-transcription
         const formData = new FormData();
-        formData.append("user_name",   "SunilK");
-        formData.append("client_time", formattedDate);
-        formData.append("file",        rec.blob, "recording.webm");
+        formData.append("user_name",     userName || "SunilK");
+        formData.append("user_timezone", tz);
+        formData.append("client_time",   formattedDate);
+        formData.append("file",          rec.blob, "recording.webm");
         const res = await fetch(API_URL, { method: "POST", body: formData });
         if (!res.ok) throw new Error(`Status ${res.status}`);
         data = await res.json();
@@ -212,16 +233,17 @@ export default function HistoryList({
 
   async function handleReanalyseSubmit() {
     if (!reanalyseRec || !reanalyseText.trim()) return;
-    const today = new Date();
-    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const tz = userTimezone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC");
+    const formattedDate = getFormattedDate(tz);
 
     setReanalyseState("loading");
     setReanalyseError("");
     try {
       const formData = new FormData();
-      formData.append("user_name",   "SunilK");
-      formData.append("client_time", formattedDate);
-      formData.append("text",        reanalyseText.trim());
+      formData.append("user_name",     userName || "SunilK");
+      formData.append("user_timezone", tz);
+      formData.append("client_time",   formattedDate);
+      formData.append("text",          reanalyseText.trim());
       const res = await fetch(TEXT_API_URL, { method: "POST", body: formData });
       if (!res.ok) throw new Error(`Server error (${res.status})`);
       const data = await res.json();

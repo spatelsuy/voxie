@@ -5,13 +5,13 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #ffffff; /* deep navy — immersive recording canvas */
+  background: var(--bg-color);
 }
 
 /* header */
 .header {
   padding: 18px 20px 12px;
-  background: #ffffff;
+  background: var(--bg-color);
   border-bottom: 0px solid var(--border);
 }
 .title { font-size: 20px; font-weight: 700; color: var(--text-main); }
@@ -19,13 +19,15 @@
 
 
 .tipsWrap {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding-top: 20px;
   text-align: center;
-  z-index: 2;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.earphoneHint {
+  font-size: 16px;
+  color: black;
+  line-height: 1.5;
 }
 
 .tipsToggle {
@@ -40,7 +42,7 @@
 }
 
 .tipsExpanded {
-  margin-top: 2px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -51,7 +53,7 @@
 }
 
 .tipRow {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
   line-height: 1.5;
 }
@@ -97,7 +99,7 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  padding: 40px 24px 80px;
+  padding: 24px;
   transition: padding-top 0.25s ease;
 }
 
@@ -226,7 +228,7 @@
 /* ── Label beneath circle ── */
 .circleLabel {
   margin-top: 28px;
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.03em;
@@ -333,7 +335,7 @@
 .modal {
   width: 100%;
   max-width: 600px;
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 20px 20px 0 0;
   border-top: 1px solid var(--border);
   padding: 20px 20px 32px;

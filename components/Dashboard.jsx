@@ -363,8 +363,8 @@ function SourceModal({ sourceText, onClose }) {
   );
 }
 
-/* ─── Single item row ─────────────────────────────── */
-function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSource }) {
+/* ─── Single Unified Item Card ────────────────────── */
+function ItemCard({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSource, isPastDue }) {
   const [status,     setStatus]     = useState(item.status || STATUS_INPROGRESS);
   const [isExpanded, setIsExpanded] = useState(false);
   const isCompleted = status === STATUS_COMPLETED;
@@ -382,7 +382,6 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
     await onStatusChange(item.id, next);
   }
 
-  /* Format a short recurrence label e.g. "↻ weekly · Mon" */
   function recLabel() {
     if (!isRecurring) return null;
     const freq = rec.frequency || "recurring";
@@ -390,156 +389,325 @@ function ItemRow({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSour
     return `↻ ${freq}${dow}`;
   }
 
+  let displayTime = "";
+  if (item.time) {
+    const parsed = parseTimeString(item.time);
+    displayTime = parsed.timePart || item.time.replace(/^\d{4}-\d{2}-\d{2}[T ]?/, "").trim();
+  }
+
   return (
-    <div className={`${styles.row} ${rowTypeClass(item.type)} ${isCompleted ? styles.rowCompleted : ""} ${isExpanded ? styles.rowExpanded : ""}`}>
-      <button
-        className={`${styles.rowStatus} ${isCompleted ? styles.rowStatusDone : ""}`}
-        onClick={handleStatusToggle}
-        aria-label={isCompleted ? "Mark as in progress" : "Mark as completed"}
-        title={isCompleted ? "Mark as in progress" : "Mark as completed"}
-      />
-      <div
-        className={styles.rowMain}
-        onClick={() => setIsExpanded((p) => !p)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" || e.key === " " ? setIsExpanded((p) => !p) : null}
-        aria-expanded={isExpanded}
-        title={isExpanded ? "Collapse" : "Expand"}
-      >
-        <div className={styles.rowSummary}>
-          <span className={styles.rowText}>{item.title}</span>
-          <div className={styles.rowRightMeta}>
-            {isRecurring && <span className={styles.recBadge}>{recLabel()}</span>}
-            {item.time && !item.recurrence?.is_recurring && (
-              <span className={styles.rowTime}>{item.time}</span>
+    <div className={`${styles.card} ${isCompleted ? styles.cardCompleted : ""} ${isPastDue ? styles.cardPastDue : ""} ${isExpanded ? styles.cardExpanded : ""}`}>
+      <div className={styles.cardHeader}>
+        <button
+          className={`${styles.checkbox} ${isCompleted ? styles.checkboxChecked : ""}`}
+          onClick={handleStatusToggle}
+          aria-label={isCompleted ? "Mark as in progress" : "Mark as completed"}
+          title={isCompleted ? "Mark as in progress" : "Mark as completed"}
+        >
+          {isCompleted && (
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4.5L4 7.5L10 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </button>
+
+        <div
+          className={styles.cardMain}
+          onClick={() => setIsExpanded((p) => !p)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setIsExpanded((p) => !p)}
+          aria-expanded={isExpanded}
+        >
+          <div className={styles.cardTitleRow}>
+            <span className={`${styles.cardTitle} ${isCompleted ? styles.cardTitleDone : ""}`}>
+              {item.title}
+            </span>
+            {displayTime && !isRecurring && (
+              <span className={styles.cardTime}>
+                <span className={styles.timeIcon}>🕒</span>
+                {displayTime}
+              </span>
             )}
           </div>
+
+          <div className={styles.cardBadgeRow}>
+            {hasPriority && (
+              <span className={`${styles.badge} ${styles[`priority_${item.priority}`] || styles.badgeDefault}`}>
+                ⚡ {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
+              </span>
+            )}
+            {isRecurring && (
+              <span className={`${styles.badge} ${styles.badgeRec}`}>
+                {recLabel()}
+              </span>
+            )}
+            {item.isDeadline && (
+              <span className={`${styles.badge} ${styles.badgeDeadline}`}>
+                Deadline
+              </span>
+            )}
+            {hasSource && (
+              <button
+                type="button"
+                className={`${styles.badge} ${styles.badgeSource}`}
+                onClick={(e) => { e.stopPropagation(); onViewSource(); }}
+                title="View original voice transcription"
+                aria-label="View original voice transcription"
+              >
+                🎙 VT
+              </button>
+            )}
+          </div>
+
+          {isExpanded && (
+            <div className={styles.cardDetails}>
+              {isRecurring && rec.start_date && (
+                <div className={styles.detailRow}>
+                  <strong>Schedule:</strong> {rec.frequency} {rec.day_of_week ? `(${rec.day_of_week})` : ""} from {rec.start_date} {rec.end_date ? `to ${rec.end_date}` : ""}
+                </div>
+              )}
+              {item.context && (
+                <div className={styles.detailRow}>
+                  <strong>Context:</strong> {item.context}
+                </div>
+              )}
+              {item.sourceSegment && (
+                <div className={styles.detailQuote}>
+                  <div className={styles.quoteLabel}>From audio recording:</div>
+                  "{item.sourceSegment}"
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        {isExpanded && (
-          <div className={styles.rowDetails}>
-            {(hasPriority || item.isDeadline || hasSource || isRecurring) && (
-              <div className={styles.rowMetaTags}>
-                {isRecurring && rec.start_date && (
-                  <span className={`${styles.rowMetaTag} ${styles.rowMetaRecurrence}`}>
-                    ↻ {rec.frequency}
-                    {rec.day_of_week ? ` · ${rec.day_of_week}` : ""}
-                    {rec.start_date ? ` from ${rec.start_date}` : ""}
-                    {rec.end_date   ? ` to ${rec.end_date}`     : ""}
-                  </span>
-                )}
-                {hasPriority && (
-                  <span className={`${styles.rowMetaTag} ${styles.rowMetaPriority}`}>
-                    Priority: {item.priority}
-                  </span>
-                )}
-                {item.isDeadline && (
-                  <span className={`${styles.rowMetaTag} ${styles.rowMetaDeadline}`}>Deadline</span>
-                )}
-                {hasSource && (
-                  <button className={`${styles.rowMetaTag} ${styles.rowSourceBtn}`} onClick={(e) => { e.stopPropagation(); onViewSource(); }}>
-                    Open source
-                  </button>
-                )}
-              </div>
-            )}
-            {item.context && (
-              <div className={`${styles.rowMetaTag} ${styles.rowMetaContext}`}>{item.context}</div>
-            )}
-            {item.sourceSegment && (
-              <div className={styles.rowSourceSegment}>
-                <span className={styles.rowSourceSegmentLabel}>From recording</span>
-                "{item.sourceSegment}"
-              </div>
-            )}
-          </div>
-        )}
+
+        <div className={styles.cardActions}>
+          <button className={styles.actionBtn} onClick={() => onEdit(item)} aria-label="Edit item" title="Edit">
+            •••
+          </button>
+          <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => onDelete(item.id)} aria-label="Delete item" title="Delete">
+            ✕
+          </button>
+        </div>
       </div>
-      <button className={styles.rowEdit}   onClick={() => onEdit(item)}      aria-label="Edit item" title="Edit">•••</button>
-      <button className={styles.rowDelete} onClick={() => onDelete(item.id)} aria-label="Delete item" title="Delete">✕</button>
     </div>
   );
 }
 
-/* ─── Reusable section renderer ───────────────────── */
-function TypeSections({ grp, a2tResults, onDeleteItem, onStatusChange, setEditingItem, setSourceText, unscheduled = false, pastDue = false, dateLabel, dateLabelClass }) {
-  const activityItems = [
-    ...grp.events,
-    ...grp.tasks,
-    ...grp.reminders,
-  ];
+/* ─── Helper: Get Monday of a given date's week ──── */
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day + 6) % 7; // Monday = 0, Sunday = 6
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
-  const renderRows = (items) =>
-    items.map((item) => (
-      <div key={item._occurrenceDate ? `${item.id}_${item._occurrenceDate}` : item.id}
-        className={pastDue ? styles.rowPastDue : ""}
-      >
-        <ItemRow
-          item={item}
-          onDelete={onDeleteItem}
-          onStatusChange={onStatusChange}
-          onEdit={setEditingItem}
-          hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
-          onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
-        />
-      </div>
-    ));
+/* ─── Calendar Navigation Strip (7-day Monday to Sunday Week) ──── */
+const SHORT_DAYS = ["M", "Tu", "W", "Th", "F", "S", "Su"];
+
+function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelectDate, activityDatesMap, onJumpToday }) {
+  const now = new Date();
+  const todayYMD = toYMD(now);
+  // Short format without year (year is already in the centered month title) to avoid mobile overlap
+  const todayShortStr = `Today, ${now.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+
+  // Generate 7 days starting from Monday through Sunday
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const dObj = new Date(currentWeekMonday.getTime() + i * 86400000);
+    const ymd = toYMD(dObj);
+    days.push({
+      dayNum: dObj.getDate(),
+      ymd,
+      dayName: SHORT_DAYS[i],
+      hasActivity: !!activityDatesMap[ymd],
+      isToday: ymd === todayYMD,
+      isSelected: ymd === selectedDate,
+    });
+  }
+
+  // Header display: e.g. "October 2024" or "Oct – Nov 2024" if spanning two months
+  const firstDay = new Date(currentWeekMonday);
+  const lastDay = new Date(currentWeekMonday.getTime() + 6 * 86400000);
+  const headerText = firstDay.getMonth() === lastDay.getMonth()
+    ? firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : `${firstDay.toLocaleDateString("en-US", { month: "short" })} – ${lastDay.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
+
+  function handlePrevWeek() {
+    onWeekChange(new Date(currentWeekMonday.getTime() - 7 * 86400000));
+  }
+
+  function handleNextWeek() {
+    onWeekChange(new Date(currentWeekMonday.getTime() + 7 * 86400000));
+  }
 
   return (
-    <>
-      {activityItems.length > 0 && (
-        <div>
-          <div className={`${styles.secRow} ${unscheduled ? styles.secRowMuted : ""}`}>
-            <span className={styles.secType}>Activities</span>
-            {dateLabel && (
-              <span className={`${styles.secDate} ${dateLabelClass || ""}`}>{dateLabel}</span>
-            )}
-          </div>
-          {renderRows(activityItems)}
+    <div className={styles.calWrapper}>
+      {/* Centered Month/Year Title + Today Button (without duplicate year) */}
+      <div className={styles.calHeader}>
+        <div className={styles.calHeaderLeftPlaceholder} />
+        <span className={styles.calMonthTitle}>{headerText}</span>
+        <button className={styles.todayBtn} onClick={onJumpToday} title="Jump to today">
+          {todayShortStr}
+        </button>
+      </div>
+
+      {/* Week row with < on left and > on right */}
+      <div className={styles.weekContainer}>
+        <button
+          type="button"
+          className={`${styles.weekNavBtn} ${styles.weekNavLeft}`}
+          onClick={handlePrevWeek}
+          aria-label="Previous week"
+          title="Previous week"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
+        {/* 7 Days Monday till Sunday row */}
+        <div className={styles.daysRow}>
+          {days.map((item) => (
+            <button
+              key={item.ymd}
+              type="button"
+              className={`${styles.dayPill} ${item.isSelected ? styles.dayPillSelected : ""} ${item.isToday ? styles.dayPillToday : ""}`}
+              onClick={() => onSelectDate(item.ymd)}
+            >
+              <span className={styles.dayName}>{item.dayName}</span>
+              <span className={styles.dayNum}>{item.dayNum}</span>
+              {item.hasActivity && <span className={styles.activityDot} />}
+            </button>
+          ))}
         </div>
-      )}
-      {grp.notes.length > 0 && (
-        <div>
-          <div className={`${styles.secRow} ${unscheduled ? styles.secRowMuted : ""}`}>
-            <span className={styles.secType}>Notes</span>
-            {dateLabel && activityItems.length === 0 && (
-              <span className={`${styles.secDate} ${dateLabelClass || ""}`}>{dateLabel}</span>
-            )}
-          </div>
-          {renderRows(grp.notes)}
-        </div>
-      )}
-    </>
+
+        <button
+          type="button"
+          className={`${styles.weekNavBtn} ${styles.weekNavRight}`}
+          onClick={handleNextWeek}
+          aria-label="Next week"
+          title="Next week"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 }
 
-/* ─── Main component ──────────────────────────────── */
+/* ─── Main Dashboard ──────────────────────────────── */
 export default function Dashboard({
-  items, a2tResults, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems, scheduleWindow,
+  items, a2tResults, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems, scheduleWindow = 7,
 }) {
   const [editingItem, setEditingItem] = useState(null);
   const [sourceText,  setSourceText]  = useState(null);
-  const [viewMode,    setViewMode]    = useState("scheduled"); // "inbox" | "scheduled"
+
+  const todayYMD = toYMD(new Date());
+  const [selectedDate, setSelectedDate] = useState(todayYMD);
+  const [currentWeekMonday, setCurrentWeekMonday] = useState(() => getMonday(new Date()));
+  const [showUnscheduled, setShowUnscheduled] = useState(false);
 
   const visibleItems = items
     .filter((i) => i.status !== "deleted")
     .filter((i) => showCompletedItems ? true : i.status !== STATUS_COMPLETED);
 
-  /* ── counts (always over all visible items) ── */
-  const taskCnt      = visibleItems.filter((i) => i.type === "task").length;
-  const eventCnt     = visibleItems.filter((i) => i.type === "event").length;
-  const remCnt       = visibleItems.filter((i) => i.type === "reminder").length;
-  const activityCnt  = taskCnt + eventCnt + remCnt;
-  const hasSummaryCounts = activityCnt > 0;
-  const isEmpty  = visibleItems.length === 0;
+  const isEmpty = visibleItems.length === 0;
 
-  /* ── grouping ── */
-  const inboxGroups    = viewMode === "inbox"     ? groupByRecording(visibleItems) : null;
-  const inboxDates     = inboxGroups ? Object.keys(inboxGroups) : [];
-  const scheduleResult = viewMode === "scheduled" ? groupBySchedule(visibleItems, scheduleWindow ?? 10) : null;
+  // Build a query window covering the current week plus surrounding days (scheduleWindow)
+  const windowDays = [];
+  for (let i = -7; i < Math.max(14, scheduleWindow + 7); i++) {
+    windowDays.push(toYMD(new Date(currentWeekMonday.getTime() + i * 86400000)));
+  }
 
-  /* ── shared row props factory ── */
-  const rowProps = { a2tResults, onDeleteItem, onStatusChange, setEditingItem, setSourceText };
+  // Map activities to dates
+  const activityDatesMap = {};
+  const dayItemsMap = {};
+  const unscheduledItems = [];
+  const pastDueItems = [];
+
+  const fullDateRe = /^\d{4}-\d{2}-\d{2}/;
+
+  visibleItems.forEach((item) => {
+    const dates = resolveScheduledDates(item, windowDays);
+    if (dates.length > 0) {
+      dates.forEach((ymd) => {
+        activityDatesMap[ymd] = true;
+        if (!dayItemsMap[ymd]) dayItemsMap[ymd] = [];
+        dayItemsMap[ymd].push({ ...item, _occurrenceDate: ymd });
+      });
+      return;
+    }
+
+    const timeStr = item.time || "";
+    const rec     = item.recurrence;
+    const isRecurring = rec?.is_recurring === true;
+
+    // Recurring items are ongoing schedules and should never be marked as past-due
+    if (isRecurring) {
+      return;
+    }
+
+    if (fullDateRe.test(timeStr)) {
+      const ymd = timeStr.slice(0, 10);
+      if (ymd < todayYMD) {
+        pastDueItems.push(item);
+      } else {
+        activityDatesMap[ymd] = true;
+        if (!dayItemsMap[ymd]) dayItemsMap[ymd] = [];
+        dayItemsMap[ymd].push(item);
+      }
+      return;
+    }
+
+    unscheduledItems.push(item);
+  });
+
+  // Sort activities for selected date chronologically
+  const activeActivities = (dayItemsMap[selectedDate] || []).sort((a, b) => {
+    const PRIO = { high: 0, medium: 1, low: 2 };
+    const timeA = a.time || "";
+    const timeB = b.time || "";
+    if (timeA && timeB) return timeA.localeCompare(timeB);
+    return (PRIO[a.priority] ?? 2) - (PRIO[b.priority] ?? 2);
+  });
+
+  function handleJumpToday() {
+    const now = new Date();
+    setCurrentWeekMonday(getMonday(now));
+    setSelectedDate(toYMD(now));
+  }
+
+  function handleDateSelect(ymd) {
+    setSelectedDate(ymd);
+    const d = ymdToDate(ymd);
+    const mondayOfSelected = getMonday(d);
+    if (toYMD(mondayOfSelected) !== toYMD(currentWeekMonday)) {
+      setCurrentWeekMonday(mondayOfSelected);
+    }
+  }
+
+  function handleWeekChange(newMonday) {
+    setCurrentWeekMonday(newMonday);
+    // Keep selected date within the newly viewed week
+    const selD = ymdToDate(selectedDate);
+    const diff = (selD.getDay() + 6) % 7;
+    const correspondingDay = new Date(newMonday.getTime() + diff * 86400000);
+    setSelectedDate(toYMD(correspondingDay));
+  }
+
+  const formattedSelectedDate = (() => {
+    const d = ymdToDate(selectedDate);
+    if (isNaN(d.getTime())) return selectedDate;
+    const full = d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+    if (selectedDate === todayYMD) return `Today · ${full}`;
+    return full;
+  })();
 
   return (
     <div className={styles.wrap}>
@@ -560,106 +728,107 @@ export default function Dashboard({
 
       {/* Scroll area */}
       <div className={styles.scroll}>
-
-        {/* Summary chips + toggle — only when there are items */}
-        {hasSummaryCounts && (
-          <>
-            <div className={styles.chips}>
-              <div className={`${styles.chip} ${styles.chipActivity}`}>
-                <div className={styles.chipNum}>{activityCnt}</div>
-                <div className={styles.chipLbl}>Activities</div>
-              </div>
-            </div>
-
-            {/* View toggle */}
-            <div className={styles.toggle}>
-              <button
-                className={`${styles.toggleBtn} ${viewMode === "scheduled" ? styles.toggleBtnActive : ""}`}
-                onClick={() => setViewMode("scheduled")}
-              >
-                By Due Date
-              </button>
-              <button
-                className={`${styles.toggleBtn} ${viewMode === "inbox" ? styles.toggleBtnActive : ""}`}
-                onClick={() => setViewMode("inbox")}
-              >
-                By Logged Date
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Empty state — OnboardingPanel fills entire scroll area */}
         {isEmpty ? (
           <div className={styles.onboardingFill}>
             <OnboardingPanel onAction={onRecordPress} />
           </div>
-
-        ) : viewMode === "inbox" ? (
-          /* ── Inbox view ── */
-          inboxDates.map((dateKey) => {
-            const grp = inboxGroups[dateKey];
-            const total = grp.events.length + grp.tasks.length + grp.reminders.length + grp.notes.length;
-            if (total === 0) return null;
-            return (
-              <div key={dateKey} className={styles.dateGroup}>
-                <TypeSections grp={grp} {...rowProps}
-                  dateLabel={dateKey === "unknown" ? "Inbox" : dayLabel(dateKey)}
-                />
-              </div>
-            );
-          })
-
         ) : (
-          /* ── Scheduled view ── */
           <>
-            {/* Past Due bucket — shown first */}
-            {(() => {
-              const p = scheduleResult.pastDue;
-              const total = p.events.length + p.tasks.length + p.reminders.length + p.notes.length;
-              if (total === 0) return null;
-              return (
-                <div className={styles.dateGroup}>
-                  <TypeSections grp={p} {...rowProps}
-                    dateLabel="Past Due"
-                    dateLabelClass={styles.secDatePastDue}
-                    pastDue
-                  />
-                </div>
-              );
-            })()}
+            {/* Calendar Week & Day Strip */}
+            <CalendarStrip
+              currentWeekMonday={currentWeekMonday}
+              onWeekChange={handleWeekChange}
+              selectedDate={selectedDate}
+              onSelectDate={handleDateSelect}
+              activityDatesMap={activityDatesMap}
+              onJumpToday={handleJumpToday}
+            />
 
-            {scheduleResult.windowDays.map((ymd) => {
-              const grp   = scheduleResult.dateMap[ymd];
-              const total = grp.events.length + grp.tasks.length + grp.reminders.length + grp.notes.length;
-              if (total === 0) return null;
-              return (
-                <div key={ymd} className={styles.dateGroup}>
-                  <TypeSections grp={grp} {...rowProps}
-                    dateLabel={dayLabel(ymd)}
-                    dateLabelClass={ymd === toYMD(new Date()) ? styles.secDateToday : ""}
-                  />
+            {/* Past Due Alert Banner (if any) */}
+            {pastDueItems.length > 0 && (
+              <div className={styles.pastDueBanner}>
+                <div className={styles.pastDueHeader}>
+                  <span className={styles.pastDueTitle}>⚠️ Overdue Activities ({pastDueItems.length})</span>
                 </div>
-              );
-            })}
+                <div className={styles.pastDueList}>
+                  {pastDueItems.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      onDelete={onDeleteItem}
+                      onStatusChange={onStatusChange}
+                      onEdit={setEditingItem}
+                      hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                      onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                      isPastDue
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {/* Unscheduled bucket */}
-            {(() => {
-              const u = scheduleResult.unscheduled;
-              const total = u.events.length + u.tasks.length + u.reminders.length + u.notes.length;
-              if (total === 0) return null;
-              return (
-                <div className={styles.dateGroup}>
-                  <div className={styles.unscheduledHint}>
-                    No date set — tap ••• on an item to add a date and schedule it.
+            {/* Selected Day Activities Header */}
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionTitleGroup}>
+                <span className={styles.sectionLabel}>ACTIVITIES</span>
+                <span className={styles.sectionDate}>{formattedSelectedDate}</span>
+              </div>
+              <span className={styles.itemCountBadge}>
+                {activeActivities.length} {activeActivities.length === 1 ? "activity" : "activities"}
+              </span>
+            </div>
+
+            {/* Unified Activities List */}
+            {activeActivities.length > 0 ? (
+              <div className={styles.activityList}>
+                {activeActivities.map((item) => (
+                  <ItemCard
+                    key={item._occurrenceDate ? `${item.id}_${item._occurrenceDate}` : item.id}
+                    item={item}
+                    onDelete={onDeleteItem}
+                    onStatusChange={onStatusChange}
+                    onEdit={setEditingItem}
+                    hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                    onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyDay}>
+                <div className={styles.emptyDayIcon}>☕</div>
+                <div className={styles.emptyDayTitle}>No activities scheduled for this day</div>
+                <div className={styles.emptyDaySub}>Enjoy your day or record a new voice note below.</div>
+              </div>
+            )}
+
+            {/* Unscheduled Items Collapsible Drawer */}
+            {unscheduledItems.length > 0 && (
+              <div className={styles.unscheduledSection}>
+                <button
+                  type="button"
+                  className={styles.unscheduledToggle}
+                  onClick={() => setShowUnscheduled((prev) => !prev)}
+                >
+                  <span>📋 Unscheduled Notes & Tasks ({unscheduledItems.length})</span>
+                  <span className={styles.toggleArrow}>{showUnscheduled ? "▲" : "▼"}</span>
+                </button>
+                {showUnscheduled && (
+                  <div className={styles.unscheduledList}>
+                    {unscheduledItems.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        onDelete={onDeleteItem}
+                        onStatusChange={onStatusChange}
+                        onEdit={setEditingItem}
+                        hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                        onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                      />
+                    ))}
                   </div>
-                  <TypeSections grp={u} {...rowProps} unscheduled
-                    dateLabel="Unscheduled"
-                    dateLabelClass={styles.secDateUnscheduled}
-                  />
-                </div>
-              );
-            })()}
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #ffffff;
+  background: var(--bg-color);
 }
 
 /* header — no border, does not scroll (matches Profile / Settings) */
 .header {
   padding: 18px 20px 12px;
-  background: #ffffff;
+  background: var(--bg-color);
   border-bottom: 0px solid var(--border);
   display: flex;
   align-items: center;

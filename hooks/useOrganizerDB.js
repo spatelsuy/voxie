@@ -265,7 +265,7 @@ export default function useOrganizerDB() {
     exportedAt:      "",       // updated on every sync/export
     storageBackend:  "supabase",  // "drive" | "supabase"
     fontFamily:      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif",
-    scheduleWindow:  10,  // days to show in scheduled view (default 10)
+    scheduleWindow:  7,   // days to show in scheduled view (default 7)
   });
   const [dbWarning,  setDbWarning]  = useState(null);
 

@@ -4,14 +4,14 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #ffffff;
+  background: var(--bg-color);
   position: relative;  /* anchors the confirmation dialog overlay */
 }
 
 /* header */
 .header {
   padding: 18px 20px 12px;
-  background: #ffffff;
+  background: var(--bg-color);
   border-bottom: 0px solid var(--border);
   display: flex;
   align-items: center;
@@ -48,7 +48,7 @@
 
 /* card */
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px 16px;
@@ -262,7 +262,7 @@
 }
 
 .dialog {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 24px;
   width: 100%;

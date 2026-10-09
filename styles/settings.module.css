@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #ffffff;
+  background: var(--bg-color);
 }
 
 /* header */
 .header {
   padding: 18px 20px 12px;
-  background: #ffffff;
+  background: var(--bg-color);
   border-bottom: 0px solid var(--border);
   display: flex;
   align-items: center;
@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 13px 14px;
@@ -141,7 +141,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 8px;
-  background: #fff;
+  background: var(--card-bg);
   color: var(--text-main);
   cursor: pointer;
   outline: none;
@@ -158,5 +158,64 @@
   font-weight: 600;
   cursor: pointer;
   flex: unset; min-height: unset;
+}
+
+/* Color theme palette */
+.colorRow {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.colorRowHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.paletteGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding-top: 4px;
+}
+.colorSwatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 6px 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  min-height: unset;
+  flex: unset;
+}
+.colorSwatch:hover {
+  transform: translateY(-1px);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+.colorSwatchActive {
+  border-color: var(--primary);
+  background-color: rgba(2, 132, 199, 0.08);
+}
+.swatchCircle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+.swatchLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+.colorSwatchActive .swatchLabel {
+  color: var(--primary);
+  font-weight: 700;
 }
 
