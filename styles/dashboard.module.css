@@ -226,22 +226,22 @@
 }
 
 .sectionLabel {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-main);
 }
 
 .sectionDate {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-main);
 }
 
 .itemCountBadge {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-main);
   background: #f1f5f9;
   border-radius: 12px;
   padding: 2px 8px;
@@ -325,8 +325,8 @@
 }
 
 .cardTitle {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-main);
   line-height: 1.4;
   word-break: break-word;
@@ -363,7 +363,7 @@
 
 .badge {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   border-radius: 6px;
   padding: 2px 7px;
   display: inline-flex;
@@ -583,7 +583,7 @@
   width: 100%;
   max-width: 360px;
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 0px;
   padding: 18px;
   border: 1px solid var(--border);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
@@ -634,7 +634,7 @@
   min-width: 0;
 }
 .inputTime {
-  width: 110px;
+  width: 130px;
   flex-shrink: 0;
   border: 1px solid var(--border);
   border-radius: 10px;

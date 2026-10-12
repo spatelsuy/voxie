@@ -1,20 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "../styles/settings.module.css";
 
-const TIMEZONE_OPTIONS = Intl.supportedValuesOf
-  ? Intl.supportedValuesOf("timeZone")
-  : [
-      "UTC",
-      "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-      "America/Anchorage", "America/Adak", "Pacific/Honolulu",
-      "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Moscow",
-      "Asia/Dubai", "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok",
-      "Asia/Singapore", "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai",
-      "Australia/Sydney", "Australia/Adelaide", "Australia/Perth",
-      "Pacific/Auckland", "Pacific/Fiji",
-      "Africa/Cairo", "Africa/Johannesburg", "America/Sao_Paulo",
-      "America/Argentina/Buenos_Aires", "America/Toronto", "America/Vancouver",
-    ];
+const TIMEZONE_OPTIONS = [
+  "UTC",
+  "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "America/Anchorage", "Pacific/Honolulu",
+  "America/Toronto", "America/Vancouver", "America/Sao_Paulo",
+  "America/Argentina/Buenos_Aires",
+  "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Moscow",
+  "Africa/Cairo", "Africa/Johannesburg",
+  "Asia/Dubai", "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok",
+  "Asia/Singapore", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul",
+  "Australia/Perth", "Australia/Adelaide", "Australia/Sydney",
+  "Pacific/Auckland", "Pacific/Fiji",
+];
 
 const FONT_OPTIONS = [
   { value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif", label: "System default" },
@@ -50,6 +49,12 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
   const localTimezone = typeof Intl !== "undefined"
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
     : "UTC";
+  const silenceSec = Math.min(settings.silenceSec ?? 2, 5); // capped at 5s (auto-pause fires at 5s)
+  const currentTimezone = settings.userTimezone || localTimezone;
+  // Keep the user's current zone selectable even if it isn't in the short list
+  const timezoneOptions = TIMEZONE_OPTIONS.includes(currentTimezone)
+    ? TIMEZONE_OPTIONS
+    : [currentTimezone, ...TIMEZONE_OPTIONS];
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(settings.userName);
 
@@ -90,7 +95,7 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
 
           <div className={styles.row}>
             <span className={styles.rowIcon}>🔇</span>
-            <span className={styles.rowLabel}>Auto-pause on silence [2 sec]</span>
+            <span className={styles.rowLabel}>Auto-pause on silence [5 sec]</span>
             <button
               className={`${styles.toggle} ${styles.toggleOn} ${styles.toggleLocked}`}
               aria-label="Auto-pause always on"
@@ -104,9 +109,9 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
             <span className={styles.rowIcon}>⏱</span>
             <span className={styles.rowLabel}>Silence timeout</span>
             <div className={styles.stepper}>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.max(2, settings.silenceSec - 1))}>−</button>
-              <span className={styles.stepVal}>{settings.silenceSec}s</span>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.min(10, settings.silenceSec + 1))}>+</button>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.max(2, silenceSec - 1))}>−</button>
+              <span className={styles.stepVal}>{silenceSec}s</span>
+              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.min(5, silenceSec + 1))}>+</button>
             </div>
           </div>
         </div>
@@ -114,18 +119,6 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
         {/* AI / A2T */}
         <div className={styles.group}>
           <div className={styles.groupLabel}>AI / A2T</div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>🤖</span>
-            <span className={styles.rowLabel}>Auto-run A2T after stop</span>
-            <button
-              className={`${styles.toggle} ${settings.autoA2T ? styles.toggleOn : ""}`}
-              onClick={() => onSettingChange("autoA2T", !settings.autoA2T)}
-              aria-label="Toggle auto A2T"
-            >
-              <span className={styles.toggleThumb} />
-            </button>
-          </div>
 
           <div className={styles.row}>
             <span className={styles.rowIcon}>👤</span>
@@ -152,10 +145,10 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
             <span className={styles.rowLabel}>Time zone</span>
             <select
               className={styles.fontSelect}
-              value={settings.userTimezone || localTimezone}
+              value={currentTimezone}
               onChange={(e) => onSettingChange("userTimezone", e.target.value)}
             >
-              {TIMEZONE_OPTIONS.map((tz) => (
+              {timezoneOptions.map((tz) => (
                 <option key={tz} value={tz}>{tz}</option>
               ))}
             </select>
@@ -180,32 +173,18 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
             </select>
           </div>
 
-          <div className={`${styles.row} ${styles.colorRow}`}>
-            <div className={styles.colorRowHeader}>
-              <span className={styles.rowIcon}>🎨</span>
-              <span className={styles.rowLabel}>Page Background</span>
-            </div>
-            <div className={styles.paletteGrid}>
-              {LIGHT_COLOR_THEMES.map((theme) => {
-                const isSelected = (settings.themeColor || "pure-white") === theme.id;
-                return (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    className={`${styles.colorSwatch} ${isSelected ? styles.colorSwatchActive : ""}`}
-                    onClick={() => onSettingChange("themeColor", theme.id)}
-                    title={theme.label}
-                    aria-label={`Select ${theme.label} theme`}
-                  >
-                    <span
-                      className={styles.swatchCircle}
-                      style={{ backgroundColor: theme.bg }}
-                    />
-                    <span className={styles.swatchLabel}>{theme.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className={styles.row}>
+            <span className={styles.rowIcon}>🎨</span>
+            <span className={styles.rowLabel}>Page Background</span>
+            <select
+              className={styles.fontSelect}
+              value={settings.themeColor || "pure-white"}
+              onChange={(e) => onSettingChange("themeColor", e.target.value)}
+            >
+              {LIGHT_COLOR_THEMES.map((theme) => (
+                <option key={theme.id} value={theme.id}>{theme.label}</option>
+              ))}
+            </select>
           </div>
 
           <div className={styles.row}>

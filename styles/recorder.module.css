@@ -60,20 +60,29 @@
 
 
 
-/* ── Logo inside circle, below mic icon ── */
+/* ── Logo inside circle: small circle with a solid 100% opaque white edge ── */
 .circleLogo {
   position: relative;
   z-index: 2;
-  height: 22px;
-  width: 22px;
+  height: 28px;
+  width: 28px;
   object-fit: cover;
   border-radius: 50%;
+  border: 2px solid #fff;
   margin-top: 10px;
-  opacity: 0.9;
+  opacity: 1;
   pointer-events: none;
-  /* screen blend: dark navy bg of the logo becomes invisible against any
-     circle colour (navy/red/amber/indigo), leaving only the white icon */
-  mix-blend-mode: screen;
+}
+
+/* Idle: logo is the only element, centred in the big circle */
+.circleLogoIdle {
+  box-sizing: content-box;
+  height: 32px;
+  width: 32px;
+  padding: 6px;               /* grows the circle without enlarging the logo */
+  background-color: #0e2848;  /* matches the logo's navy background */
+  border-width: 2px;
+  margin-top: 0;
 }
 
 /* webview warning — floats above stage */
@@ -239,9 +248,9 @@
 }
 
 .circleHint {
-  margin-top: 12px;
-  font-size: 14px;
-  color: #64748b;
+  margin-top: 2px;
+  font-size: 12px;
+  color: black;
   text-align: center;
   letter-spacing: 0.01em;
 }
@@ -268,11 +277,11 @@
   margin-top: 24px;
   background: transparent;
   border: 1px solid rgba(255,255,255,0.2);
-  color: #94a3b8;
+  color: green;
   border-radius: 999px;
   padding: 9px 28px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 200;
   cursor: pointer;
   flex: unset;
   min-height: unset;
@@ -336,14 +345,14 @@
   width: 100%;
   max-width: 600px;
   background: var(--card-bg);
-  border-radius: 20px 20px 0 0;
+  border-radius: 0px 0px 0 0;
   border-top: 1px solid var(--border);
   padding: 20px 20px 32px;
 }
 
 @media (min-width: 640px) {
   .modalOverlay { align-items: center; padding: 24px; }
-  .modal { border-radius: 18px; max-width: 520px; }
+  .modal { border-radius: 0px; max-width: 520px; }
 }
 
 .modalHeader {
@@ -388,7 +397,7 @@
   min-height: 180px;
   resize: vertical;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 0px;
   padding: 14px;
   font: inherit;
   font-size: 14px;
