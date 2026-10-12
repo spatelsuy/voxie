@@ -257,7 +257,6 @@ export default function useOrganizerDB() {
   const [settings,   setSettings]   = useState({
     showCompletedItems: false,
     autoPause: true,
-    autoA2T: false,
     silenceSec: 2,
     userName: "SunilK",
     userTimezone:    typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC",

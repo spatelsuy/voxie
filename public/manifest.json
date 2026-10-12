@@ -5,7 +5,7 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
+  "background_color": "#0e2848",
   "theme_color": "#0284c7",
   "icons": [
     {
@@ -14,8 +14,7 @@
       "type": "image/png",
       "purpose": "any maskable"
     },
-    {
-      "src": "/K_Logo.png",
+    { "src": "/K_Icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

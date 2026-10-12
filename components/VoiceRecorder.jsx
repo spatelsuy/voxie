@@ -53,6 +53,8 @@ export default function VoiceRecorder({
   const [textValue,        setTextValue]         = useState("");
   const [textError,        setTextError]         = useState("");
   const [isSubmittingText, setIsSubmittingText]  = useState(false);
+  const [elapsedSec,       setElapsedSec]        = useState(0); // live seconds while analysing audio / submitting text
+  const [doneSec,          setDoneSec]           = useState(0); // total seconds the last activity took
   const [msgIndex,         setMsgIndex]          = useState(0);
   const [msgVisible,       setMsgVisible]        = useState(true);
 
@@ -400,6 +402,21 @@ export default function VoiceRecorder({
 
   const isActiveRec = recState === "recording" || recState === "paused";
 
+  /* ── Elapsed-seconds timer (audio analysis or text submit) ──────── */
+  const isBusy = isSubmittingText || (recState === "idle" && (autoA2TStatus === "processing"
+    || ((statusText === "Saving…" || statusText === "Analysing…" || statusText === "Transcribing…")
+        && autoA2TStatus !== "error" && autoA2TStatus !== "done")));
+  useEffect(() => {
+    if (!isBusy) return;
+    const start = Date.now();
+    setElapsedSec(0);
+    const id = setInterval(() => setElapsedSec(Math.floor((Date.now() - start) / 1000)), 500);
+    return () => {
+      clearInterval(id);
+      setDoneSec(Math.floor((Date.now() - start) / 1000));
+    };
+  }, [isBusy]);
+
   /* ── Sync statusText with autoA2TStatus from parent ─────────────  */
   useEffect(() => {
     if (autoA2TStatus === "done")        setStatusText("Done ✓");
@@ -442,8 +459,8 @@ export default function VoiceRecorder({
   const circleLabel =
     circleState === "recording"  ? statusText || "Recording…"                                           :
     circleState === "paused"     ? statusText                                                            :
-    circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : statusText || "Processing…") :
-    autoA2TStatus === "done"     ? "Done — check History and Inbox"                                     :
+    circleState === "processing" ? (autoA2TStatus === "done" ? "Done ✓" : `${statusText || "Processing…"} ${elapsedSec}s`) :
+    autoA2TStatus === "done"     ? `Done — check History and Inbox (${doneSec}s)`                       :
     autoA2TStatus === "error"    ? "Failed — try manually"                                              :
     null; // idle — rendered as two lines below
 
@@ -492,7 +509,7 @@ export default function VoiceRecorder({
                 onClick={handleTextSubmit}
                 disabled={isSubmittingText || !textValue.trim()}
               >
-                {isSubmittingText ? "Submitting…" : "Submit"}
+                {isSubmittingText ? `Waiting… ${elapsedSec}s` : "Submit"}
               </button>
             </div>
           </div>
@@ -540,17 +557,17 @@ export default function VoiceRecorder({
             </>
           )}
           {isActiveRec && <canvas ref={canvasRef} className={styles.circleCanvas} />}
-          <span className={styles.circleIcon}>
-            {circleState === "processing" ? (
+          {circleState === "processing" && (
+            <span className={styles.circleIcon}>
               <span className={styles.spinner} />
-            ) : circleState === "recording" || circleState === "paused" ? (
-              "■"
-            ) : (
-              "🎙"
-            )}
-          </span>
+            </span>
+          )}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/K_Logo-record.png" alt="Kahija" className={styles.circleLogo} />
+          <img
+            src="/K_Logo-record.png"
+            alt="Kahija"
+            className={`${styles.circleLogo} ${circleState !== "processing" ? styles.circleLogoIdle : ""}`}
+          />
         </button>
 
         {/* Label + hint */}
