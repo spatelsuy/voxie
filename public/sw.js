@@ -5,13 +5,14 @@
    - Static assets (images, icons) → Cache-first
    ─────────────────────────────────────────────────────────────────────────── */
 
-const CACHE_NAME = "kahija-v2";
+const CACHE_NAME = "kahija-v4";
 
 const APP_SHELL = [
   "/",
   "/manifest.json",
   "/K_ico.png",
   "/K_Logo.png",
+  "/K_Icon-192.png",
   "/K_Icon-512.png",
   "/K_Logo-record.png",
 ];

@@ -15,8 +15,6 @@ import Settings, { LIGHT_COLOR_THEMES } from "../components/Settings";
 import Help           from "../components/Help";
 import pageStyles     from "../styles/page.module.css";
 
-const WELCOME_MS = 900;
-
 const API_URL = "/api/transcribe";
 const TEXT_API_URL = "/api/transcribe-text";
 
@@ -41,17 +39,6 @@ function getFormattedDate(timeZone) {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("record");
-  // Client-only: starts false so server HTML (or a stale SW-cached copy) always matches hydration
-  const [showWelcome, setShowWelcome] = useState(false);
-
-  useEffect(() => {
-    // Mobile only — desktop (≥1024px, same breakpoint as the shell layout) skips it
-    if (!window.matchMedia("(max-width: 1023px)").matches) return;
-    setShowWelcome(true);
-    const t = setTimeout(() => setShowWelcome(false), WELCOME_MS);
-    return () => clearTimeout(t);
-  }, []);
-
   // Read ?tab= from URL after mount — avoids SSR/hydration mismatch
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get("tab");
@@ -206,14 +193,6 @@ export default function Home() {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href={GOOGLE_FONTS_URL} />
       </Head>
-
-      {showWelcome && (
-        <div className={pageStyles.welcome} onClick={() => setShowWelcome(false)}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/K_Logo-record.png" alt="Kahija" className={pageStyles.welcomeLogo} />
-          <div className={pageStyles.welcomeText}>Welcome to Kahija</div>
-        </div>
-      )}
 
       <div className={pageStyles.shell}>
         {/* Onboarding overlay — used from Settings "How Voxie Works" */}

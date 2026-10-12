@@ -29,37 +29,6 @@
   padding: 16px;
   background: rgba(15, 23, 42, 0.32);
 }
-/* ─── Welcome splash (shown briefly on launch) ─────── */
-.welcome {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  background: var(--bg-color);
-  animation: welcomeFade 0.3s ease 0.6s forwards;
-}
-.welcomeLogo {
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
-  object-fit: cover;
-}
-.welcomeText {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-main);
-  letter-spacing: -0.01em;
-}
-@keyframes welcomeFade {
-  to { opacity: 0; }
-}
-
-
-
 @media (min-width: 1024px) {
   .shell {
     width: 60%;
