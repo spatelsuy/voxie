@@ -79,11 +79,11 @@ function FAQRow({ item, isOpen, onToggle }) {
           padding: "20px 4px", background: "none", border: "none", cursor: "pointer", textAlign: "left",
         }}
       >
-        <span style={{ fontFamily: "var(--app-font)", fontSize: 16.5, fontWeight: 600, color: COLORS.ink }}>
+        <span style={{ fontFamily: "var(--app-font)", fontSize: 14, fontWeight: 500, color: COLORS.ink }}>
           {item.q}
         </span>
         <span style={{
-          fontFamily: "var(--app-font)", fontSize: 22, color: COLORS.amber,
+          fontFamily: "var(--app-font)", fontSize: 14, color: COLORS.amber,
           transform: isOpen ? "rotate(45deg)" : "rotate(0deg)", transition: "transform 0.2s ease",
           flexShrink: 0, marginLeft: 16,
         }}>
@@ -92,7 +92,7 @@ function FAQRow({ item, isOpen, onToggle }) {
       </button>
       <div style={{ maxHeight: isOpen ? 300 : 0, overflow: "hidden", transition: "max-height 0.3s ease" }}>
         <p style={{
-          fontFamily: "var(--app-font)", fontSize: 14.5, lineHeight: 1.6, color: COLORS.mist,
+          fontFamily: "var(--app-font)", fontSize: 12, lineHeight: 1.6, color: COLORS.mist,
           padding: "0 4px 20px", margin: 0,
         }}>
           {item.a}
@@ -134,7 +134,7 @@ export default function Help() {
         <div style={{ width: "90%", margin: "0 auto", padding: "28px 0 0" }}>
 
           {/* ── Playlist embed ── */}
-          <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>
+          <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 20, color: COLORS.ink, marginBottom: 6 }}>
             Watch Kahija in action
           </div>
           <div style={{ fontFamily: "var(--app-font)", fontSize: 14, color: COLORS.faint, marginBottom: 20 }}>
@@ -143,14 +143,20 @@ export default function Help() {
 
           {/* ── Desktop: inline embed ── */}
           <div className={styles.videoDesktop} style={{
-            position: "relative", width: "100%", paddingBottom: "56.25%",
+            position: "relative", width: "100%", maxWidth: 480, margin: "0 auto",
+            paddingBottom: "min(56.25%, 270px)",
             borderRadius: 16, overflow: "hidden",
             border: `1px solid ${COLORS.line}`,
             boxShadow: "0 4px 24px rgba(27,30,46,0.08)",
             marginBottom: 44,
           }}>
             <iframe
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+              style={{
+                position: "absolute", top: 0, left: 0, border: "none",
+                // Render at 150% then scale to 2/3: shrinks YouTube's title/controls, video still fills the box
+                width: "150%", height: "150%",
+                transform: "scale(0.6667)", transformOrigin: "0 0",
+              }}
               src={`https://www.youtube.com/embed/${FIRST_VIDEO_ID}?list=${PLAYLIST_ID}&listType=playlist&rel=0&modestbranding=1`}
               title="Kahija videos"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -198,7 +204,7 @@ export default function Help() {
           </a>
 
           {/* ── FAQ title ── */}
-          <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 30, color: COLORS.ink, marginBottom: 6 }}>
+          <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 20, color: COLORS.ink, marginBottom: 6 }}>
             Frequently Asked Questions
           </div>
           <div style={{ fontFamily: "var(--app-font)", fontSize: 14, color: COLORS.faint, marginBottom: 28 }}>
@@ -211,7 +217,7 @@ export default function Help() {
               if (row.type === "heading") {
                 return (
                   <div key={`h-${i}`} style={{
-                    fontFamily: "var(--app-font)", fontSize: 11, fontWeight: 700,
+                    fontFamily: "var(--app-font)", fontSize: 11, fontWeight: 600,
                     textTransform: "uppercase", letterSpacing: "0.07em",
                     color: COLORS.faint, padding: "28px 4px 4px",
                   }}>
