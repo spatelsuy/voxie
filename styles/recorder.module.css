@@ -115,6 +115,8 @@
 /* ── The Big Circle ── */
 .circle {
   position: relative;
+  /* extra breathing room above/below — the glow rings extend ~24–36px past the edge */
+  margin: 50px 0;
   width: 140px;
   height: 140px;
   border-radius: 50%;
