@@ -222,6 +222,43 @@ export default function OnboardingPanel({ onAction, onClose, showClose = false }
   const page = ONBOARDING_PAGES[pageIndex];
   const isFirst = pageIndex === 0;
   const isLast = pageIndex === total - 1;
+  const viewportRef = useRef(null);
+  const touchStart = useRef(null);
+
+  const goNext = () => setPageIndex((v) => Math.min(total - 1, v + 1));
+  const goPrev = () => setPageIndex((v) => Math.max(0, v - 1));
+
+  // Swipe navigation. Horizontal swipes always change page. Vertical swipes change
+  // page only when the slide was already at its scroll edge when the touch began,
+  // so tall slides can still be scrolled normally.
+  function handleTouchStart(e) {
+    const t = e.touches[0];
+    const el = viewportRef.current;
+    touchStart.current = {
+      x: t.clientX,
+      y: t.clientY,
+      atTop: !el || el.scrollTop <= 0,
+      atBottom: !el || el.scrollTop + el.clientHeight >= el.scrollHeight - 1,
+    };
+  }
+
+  function handleTouchEnd(e) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const MIN = 50;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      if (Math.abs(dx) < MIN) return;
+      if (dx < 0) goNext(); else goPrev();   // swipe left → next, right → previous
+    } else {
+      if (Math.abs(dy) < MIN) return;
+      if (dy < 0 && start.atBottom) goNext(); // swipe up → next
+      else if (dy > 0 && start.atTop) goPrev(); // swipe down → previous
+    }
+  }
 
   return (
     <div className={styles.panel}>
@@ -234,7 +271,12 @@ export default function OnboardingPanel({ onAction, onClose, showClose = false }
         )}
       </div>
 
-      <div className={styles.slideViewport}>
+      <div
+        className={styles.slideViewport}
+        ref={viewportRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <OnboardingSlide
           page={page}
           onAction={() => (isLast ? onAction?.() : setPageIndex((v) => Math.min(total - 1, v + 1)))}
