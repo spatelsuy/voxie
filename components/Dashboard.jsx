@@ -364,7 +364,7 @@ function SourceModal({ sourceText, onClose }) {
 }
 
 /* ─── Single Unified Item Card ────────────────────── */
-function ItemCard({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSource, isPastDue }) {
+function ItemCard({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSource, isPastDue, showDate }) {
   const [status,     setStatus]     = useState(item.status || STATUS_INPROGRESS);
   const [isExpanded, setIsExpanded] = useState(false);
   const isCompleted = status === STATUS_COMPLETED;
@@ -390,8 +390,10 @@ function ItemCard({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSou
   }
 
   let displayTime = "";
+  let datePart = "";
   if (item.time) {
     const parsed = parseTimeString(item.time);
+    datePart = parsed.datePart;
     displayTime = parsed.timePart || item.time.replace(/^\d{4}-\d{2}-\d{2}[T ]?/, "").trim();
   }
 
@@ -423,6 +425,12 @@ function ItemCard({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSou
             <span className={`${styles.cardTitle} ${isCompleted ? styles.cardTitleDone : ""}`}>
               {item.title}
             </span>
+            {showDate && datePart && (
+              <span className={styles.cardTime}>
+                <span className={styles.timeIcon}>📅</span>
+                {datePart}
+              </span>
+            )}
             {displayTime && !isRecurring && (
               <span className={styles.cardTime}>
                 <span className={styles.timeIcon}>🕒</span>
@@ -508,11 +516,9 @@ function getMonday(date) {
 /* ─── Calendar Navigation Strip (7-day Monday to Sunday Week) ──── */
 const SHORT_DAYS = ["M", "Tu", "W", "Th", "F", "S", "Su"];
 
-function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelectDate, activityDatesMap, onJumpToday }) {
+function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelectDate, activityDatesMap, onJumpToday, viewMode, onViewModeChange, searchQuery, onSearchQueryChange }) {
   const now = new Date();
   const todayYMD = toYMD(now);
-  // Short format without year (year is already in the centered month title) to avoid mobile overlap
-  const todayShortStr = `Today, ${now.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
   // Generate 7 days starting from Monday through Sunday
   const days = [];
@@ -533,7 +539,7 @@ function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelect
   const firstDay = new Date(currentWeekMonday);
   const lastDay = new Date(currentWeekMonday.getTime() + 6 * 86400000);
   const headerText = firstDay.getMonth() === lastDay.getMonth()
-    ? firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    ? firstDay.toLocaleDateString("en-US", { month: "short", year: "numeric" })
     : `${firstDay.toLocaleDateString("en-US", { month: "short" })} – ${lastDay.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
 
   function handlePrevWeek() {
@@ -546,17 +552,58 @@ function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelect
 
   return (
     <div className={styles.calWrapper}>
-      {/* Centered Month/Year Title + Today Button (without duplicate year) */}
+      {/* Month/Year title + "Show by date" toggle on the left, Today button on the right */}
       <div className={styles.calHeader}>
-        <div className={styles.calHeaderLeftPlaceholder} />
         <span className={styles.calMonthTitle}>{headerText}</span>
+        {/* "Show by date", "Overdue" and Search are mutually exclusive view modes */}
+        <label className={styles.showByDateLabel}>
+          <input
+            type="checkbox"
+            checked={viewMode === "date"}
+            onChange={(e) => onViewModeChange(e.target.checked ? "date" : "calendar")}
+          />
+          By Date
+        </label>
+        <label className={styles.showByDateLabel}>
+          <input
+            type="checkbox"
+            checked={viewMode === "overdue"}
+            onChange={(e) => onViewModeChange(e.target.checked ? "overdue" : "calendar")}
+          />
+          Overdue
+        </label>
+        <button
+          type="button"
+          className={`${styles.searchBtn} ${viewMode === "search" ? styles.searchBtnActive : ""}`}
+          onClick={() => onViewModeChange(viewMode === "search" ? "calendar" : "search")}
+          aria-label="Search activities"
+          aria-pressed={viewMode === "search"}
+          title="Search"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
         <button className={styles.todayBtn} onClick={onJumpToday} title="Jump to today">
-          {todayShortStr}
+          Today
         </button>
       </div>
 
-      {/* Week row with < on left and > on right */}
-      <div className={styles.weekContainer}>
+      {viewMode === "search" && (
+        <input
+          type="text"
+          className={styles.searchInput}
+          value={searchQuery}
+          onChange={(e) => onSearchQueryChange(e.target.value)}
+          placeholder="Search title or context…"
+          aria-label="Search activities by title or context"
+          autoFocus
+        />
+      )}
+
+      {/* Week row with < on left and > on right (calendar view only) */}
+      <div className={styles.weekContainer} style={viewMode !== "calendar" ? { display: "none" } : undefined}>
         <button
           type="button"
           className={`${styles.weekNavBtn} ${styles.weekNavLeft}`}
@@ -612,6 +659,10 @@ export default function Dashboard({
   const [selectedDate, setSelectedDate] = useState(todayYMD);
   const [currentWeekMonday, setCurrentWeekMonday] = useState(() => getMonday(new Date()));
   const [showUnscheduled, setShowUnscheduled] = useState(false);
+  const [viewMode, setViewMode] = useState("calendar"); // "calendar" | "date" | "overdue" | "search"
+  const [searchQuery, setSearchQuery] = useState("");
+  const showByDate = viewMode === "date";
+  const [collapsedDates, setCollapsedDates] = useState({}); // { "YYYY-MM-DD": true } = collapsed
 
   const visibleItems = items
     .filter((i) => i.status !== "deleted")
@@ -634,6 +685,24 @@ export default function Dashboard({
   const fullDateRe = /^\d{4}-\d{2}-\d{2}/;
 
   visibleItems.forEach((item) => {
+    const itemTime = item.time || "";
+
+    // Non-recurring item with a concrete date:
+    //   date == selected date → show it on that day, otherwise don't show it
+    //   date <  today and not completed → counted in the past-due note at the top
+    if (fullDateRe.test(itemTime) && item.recurrence?.is_recurring !== true) {
+      const ymd = itemTime.slice(0, 10);
+      activityDatesMap[ymd] = true; // calendar dot stays on the item's own date
+      if (ymd === selectedDate) {
+        if (!dayItemsMap[ymd]) dayItemsMap[ymd] = [];
+        dayItemsMap[ymd].push(item);
+      }
+      if (ymd < todayYMD && item.status !== STATUS_COMPLETED) {
+        pastDueItems.push(item);
+      }
+      return;
+    }
+
     const dates = resolveScheduledDates(item, windowDays);
     if (dates.length > 0) {
       dates.forEach((ymd) => {
@@ -644,29 +713,65 @@ export default function Dashboard({
       return;
     }
 
-    const timeStr = item.time || "";
-    const rec     = item.recurrence;
-    const isRecurring = rec?.is_recurring === true;
-
     // Recurring items are ongoing schedules and should never be marked as past-due
-    if (isRecurring) {
-      return;
-    }
-
-    if (fullDateRe.test(timeStr)) {
-      const ymd = timeStr.slice(0, 10);
-      if (ymd < todayYMD) {
-        pastDueItems.push(item);
-      } else {
-        activityDatesMap[ymd] = true;
-        if (!dayItemsMap[ymd]) dayItemsMap[ymd] = [];
-        dayItemsMap[ymd].push(item);
-      }
+    if (item.recurrence?.is_recurring === true) {
       return;
     }
 
     unscheduledItems.push(item);
   });
+
+  // ── "Show by date" list view ──
+  // Every item is listed once under its own date; a recurring item goes under its start date.
+  // Items with no usable date fall into the Unscheduled drawer.
+  const listGroups = {};
+  const listUnscheduled = [];
+  visibleItems.forEach((item) => {
+    const rec = item.recurrence;
+    const timeStr = item.time || "";
+    let ymd = null;
+    if (rec?.is_recurring === true && rec.start_date) ymd = rec.start_date.slice(0, 10);
+    else if (fullDateRe.test(timeStr)) ymd = timeStr.slice(0, 10);
+
+    if (ymd) {
+      if (!listGroups[ymd]) listGroups[ymd] = [];
+      listGroups[ymd].push(item);
+    } else {
+      listUnscheduled.push(item);
+    }
+  });
+  const listDates = Object.keys(listGroups).sort(); // ascending
+  const PRIO_ORDER = { high: 0, medium: 1, low: 2 };
+  listDates.forEach((ymd) => {
+    listGroups[ymd].sort((a, b) => {
+      const timeA = a.time || "";
+      const timeB = b.time || "";
+      if (timeA && timeB) return timeA.localeCompare(timeB);
+      return (PRIO_ORDER[a.priority] ?? 2) - (PRIO_ORDER[b.priority] ?? 2);
+    });
+  });
+  const drawerItems = showByDate ? listUnscheduled : unscheduledItems;
+
+  // Overdue view: every non-recurring, non-completed item dated before today, oldest first
+  const overdueList = [...pastDueItems].sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+  // Search view: free-text match on title and context across all visible items
+  const q = searchQuery.trim().toLowerCase();
+  const searchResults = q
+    ? visibleItems
+        .filter((i) => `${i.title || ""} ${i.context || ""}`.toLowerCase().includes(q))
+        .sort((a, b) => (a.time || "~").localeCompare(b.time || "~")) // undated last
+    : [];
+
+  function toggleDateCollapsed(ymd) {
+    setCollapsedDates((prev) => ({ ...prev, [ymd]: !prev[ymd] }));
+  }
+
+  function dateHeading(ymd) {
+    const d = ymdToDate(ymd);
+    const full = d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+    return ymd === todayYMD ? `Today · ${full}` : full;
+  }
 
   // Sort activities for selected date chronologically
   const activeActivities = (dayItemsMap[selectedDate] || []).sort((a, b) => {
@@ -742,16 +847,27 @@ export default function Dashboard({
               onSelectDate={handleDateSelect}
               activityDatesMap={activityDatesMap}
               onJumpToday={handleJumpToday}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
             />
 
-            {/* Past Due Alert Banner (if any) */}
-            {pastDueItems.length > 0 && (
+            {/* Past-due note (if any) */}
+            {viewMode !== "overdue" && pastDueItems.length > 0 && (
               <div className={styles.pastDueBanner}>
                 <div className={styles.pastDueHeader}>
-                  <span className={styles.pastDueTitle}>⚠️ Overdue Activities ({pastDueItems.length})</span>
+                  <span className={styles.pastDueTitle}>
+                    ⚠️ You have {pastDueItems.length} past due {pastDueItems.length === 1 ? "activity" : "activities"}
+                  </span>
                 </div>
-                <div className={styles.pastDueList}>
-                  {pastDueItems.map((item) => (
+              </div>
+            )}
+
+            {viewMode === "overdue" && (
+              overdueList.length > 0 ? (
+                <div className={styles.activityList}>
+                  {overdueList.map((item) => (
                     <ItemCard
                       key={item.id}
                       item={item}
@@ -761,13 +877,88 @@ export default function Dashboard({
                       hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
                       onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
                       isPastDue
+                      showDate
                     />
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className={styles.emptyDay}>
+                  <div className={styles.emptyDayTitle}>No overdue activities</div>
+                </div>
+              )
+            )}
+
+            {viewMode === "search" && (
+              searchResults.length > 0 ? (
+                <div className={styles.activityList}>
+                  {searchResults.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      onDelete={onDeleteItem}
+                      onStatusChange={onStatusChange}
+                      onEdit={setEditingItem}
+                      hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                      onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                      showDate
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.emptyDay}>
+                  <div className={styles.emptyDayTitle}>
+                    {q ? "No matching activities" : "Type to search titles and context"}
+                  </div>
+                </div>
+              )
+            )}
+
+            {showByDate && (
+              listDates.length > 0 ? (
+                <div className={styles.dateGroupList}>
+                  {listDates.map((ymd) => {
+                    const collapsed = !!collapsedDates[ymd];
+                    const groupItems = listGroups[ymd];
+                    return (
+                      <div key={ymd} className={styles.dateGroup}>
+                        <button
+                          type="button"
+                          className={styles.dateGroupHeader}
+                          onClick={() => toggleDateCollapsed(ymd)}
+                          aria-expanded={!collapsed}
+                        >
+                          <span className={styles.toggleArrow}>{collapsed ? "▶" : "▼"}</span>
+                          <span className={styles.dateGroupTitle}>{dateHeading(ymd)}</span>
+                          <span className={styles.itemCountBadge}>{groupItems.length}</span>
+                        </button>
+                        {!collapsed && (
+                          <div className={styles.activityList}>
+                            {groupItems.map((item) => (
+                              <ItemCard
+                                key={item.id}
+                                item={item}
+                                onDelete={onDeleteItem}
+                                onStatusChange={onStatusChange}
+                                onEdit={setEditingItem}
+                                hasSource={!!a2tResults[item.sourceRecordingId]?.transcription}
+                                onViewSource={() => setSourceText(a2tResults[item.sourceRecordingId]?.transcription || null)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.emptyDay}>
+                  <div className={styles.emptyDayTitle}>No dated activities</div>
+                </div>
+              )
             )}
 
             {/* Selected Day Activities Header */}
+            {viewMode === "calendar" && (
             <div className={styles.sectionHeader}>
               <div className={styles.sectionTitleGroup}>
                 <span className={styles.sectionLabel}>ACTIVITIES</span>
@@ -777,9 +968,10 @@ export default function Dashboard({
                 {activeActivities.length} {activeActivities.length === 1 ? "activity" : "activities"}
               </span>
             </div>
+            )}
 
             {/* Unified Activities List */}
-            {activeActivities.length > 0 ? (
+            {viewMode === "calendar" && (activeActivities.length > 0 ? (
               <div className={styles.activityList}>
                 {activeActivities.map((item) => (
                   <ItemCard
@@ -799,22 +991,22 @@ export default function Dashboard({
                 <div className={styles.emptyDayTitle}>No activities scheduled for this day</div>
                 <div className={styles.emptyDaySub}>Enjoy your day or record a new voice note below.</div>
               </div>
-            )}
+            ))}
 
             {/* Unscheduled Items Collapsible Drawer */}
-            {unscheduledItems.length > 0 && (
+            {(viewMode === "calendar" || viewMode === "date") && drawerItems.length > 0 && (
               <div className={styles.unscheduledSection}>
                 <button
                   type="button"
                   className={styles.unscheduledToggle}
                   onClick={() => setShowUnscheduled((prev) => !prev)}
                 >
-                  <span>📋 Unscheduled Notes & Tasks ({unscheduledItems.length})</span>
+                  <span>📋 Unscheduled Notes & Tasks ({drawerItems.length})</span>
                   <span className={styles.toggleArrow}>{showUnscheduled ? "▲" : "▼"}</span>
                 </button>
                 {showUnscheduled && (
                   <div className={styles.unscheduledList}>
-                    {unscheduledItems.map((item) => (
+                    {drawerItems.map((item) => (
                       <ItemCard
                         key={item.id}
                         item={item}
