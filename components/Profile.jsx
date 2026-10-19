@@ -1,159 +1,270 @@
 import { useState, useEffect } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
 import styles from "../styles/profile.module.css";
-import ExportICSModal from "./ExportICSModal";
+import {
+  loadProfile, generateProfileKey, saveProfile, keyFingerprint, checkProfileIntegrity,
+  buildKeyFile, prepareRestore, exportKeyBase64, encryptJson, decryptJson,
+} from "../lib/profileStore";
 
-export default function Profile({ onGetSyncData, onMergeSync, storageBackend, onSaveSetting, onClearLocalDB, items }) {
-  const { data: session, status } = useSession();
-  const isSignedIn = status === "authenticated";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const [syncJson,    setSyncJson]    = useState(null);
-  const [jsonLoading, setJsonLoading] = useState(false);
-  const [syncState,   setSyncState]   = useState(null); // null | "uploading" | "downloading" | "done" | "error"
-  const [syncMsg,     setSyncMsg]     = useState("");
-  const [clearState,      setClearState]      = useState(null);
-  const [clearMsg,        setClearMsg]        = useState("");
-  const [localClearState, setLocalClearState] = useState(null); // null | "confirm" | "clearing" | "done" | "error"
-  const [showICSModal,    setShowICSModal]    = useState(false);
+async function postJson(url, body) {
+  const res  = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
 
-  const [calState, setCalState] = useState(null); // null | "pushing" | "deleting" | "done" | "error"
-  const [calMsg,   setCalMsg]   = useState("");
+export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) {
+  const [step,     setStep]     = useState("loading"); // loading | email | otp | done | tampered
+  const [legacyKey, setLegacyKey] = useState(null);    // pre-seal key found in the DB, kept (not regenerated) on re-verify
+  const [unverifiedNote, setUnverifiedNote] = useState(false); // integrity could not be checked (offline)
+  const [restoring, setRestoring] = useState(null);   // { email, cryptoKey, seal, from } — file passed the seal check, awaiting OTP
+  const [email,    setEmail]    = useState("");
+  const [otp,      setOtp]      = useState("");
+  const [keyB64,   setKeyB64]   = useState("");
+  const [busy,     setBusy]     = useState(false);
+  const [error,    setError]    = useState("");
+  const [info,     setInfo]     = useState("");
+  const [syncState,  setSyncState]  = useState(null); // null | "syncing" | "done" | "error"
+  const [syncMsg,    setSyncMsg]    = useState("");
+  const [cloudClear, setCloudClear] = useState(null); // null | "confirm" | "clearing" | "done" | "error"
+  const [cloudMsg,   setCloudMsg]   = useState("");
+  const [localClear, setLocalClear] = useState(null); // null | "confirm" | "clearing" | "done" | "error"
 
-  const backend = storageBackend || "supabase";
-
-  /* ── Auto sign-out when token refresh has failed ─── */
+  /* Restore an already-verified profile from the browser DB */
   useEffect(() => {
-    if (session?.error === "RefreshAccessTokenError") {
-      signOut({ redirect: false });
-    }
-  }, [session?.error]);
+    let mounted = true;
+    (async () => {
+      try {
+        const saved = await loadProfile();
+        if (!mounted) return;
+        if (saved.email && saved.cryptoKey) {
+          const integrity = await checkProfileIntegrity(saved.email, saved.cryptoKey, saved.seal);
+          if (!mounted) return;
+          if (integrity === "invalid") {
+            setStep("tampered");          // email, key or seal was changed
+          } else if (integrity === "unsealed") {
+            // Created before sealing existed: keep the same key, re-verify the email to seal it
+            setLegacyKey(saved.cryptoKey);
+            setEmail(saved.email);
+            setInfo("Please verify your email again to secure your existing key.");
+            setStep("email");
+          } else {
+            setEmail(saved.email);
+            setUnverifiedNote(integrity === "unreachable");
+            setStep("done");              // never display the key again
+          }
+        } else {
+          setStep("email");
+        }
+      } catch (err) {
+        console.error("Failed to load profile:", err);
+        if (mounted) setStep("email");
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
-  /* ── View Sync JSON ───────────────────────────────── */
-  async function handleViewSync() {
-    setJsonLoading(true);
+  /* keyHash is sent when the same key is coming back (restore / legacy re-verify), so the server
+     can tell it apart from a request to create a second key for an already-registered email. */
+  async function sendOtpTo(clean, cryptoKey) {
+    await postJson("/api/otp/send", { email: clean, ...(cryptoKey && { keyHash: await keyFingerprint(cryptoKey) }) });
+    setEmail(clean);
+    setOtp("");
+    setStep("otp");
+    setInfo(`We sent a 6-digit code to ${clean}. It is valid for 5 minutes.`);
+  }
+
+  async function handleSendOtp() {
+    setError(""); setInfo("");
+    const clean = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(clean)) { setError("Enter a valid email address."); return; }
+    setBusy(true);
     try {
-      const snapshot = await onGetSyncData();
-      setSyncJson(JSON.stringify(snapshot, null, 2));
+      await sendOtpTo(clean, restoring?.cryptoKey || legacyKey);
     } catch (err) {
-      console.error("Failed to build sync snapshot:", err);
-      setSyncJson('{ "error": "Failed to load data." }');
+      setError(err.message);
     } finally {
-      setJsonLoading(false);
+      setBusy(false);
     }
   }
 
-  /* ── Sync ─────────────────────────────────────────── */
-  async function handleSync() {
-    if (!isSignedIn) return;
-    const url = `/api/sync?backend=${backend}`;
+  async function handleVerify() {
+    setError(""); setInfo("");
+    if (!/^\d{6}$/.test(otp)) { setError("Enter the 6-digit code."); return; }
+    setBusy(true);
     try {
-      // 1. Download first — pull any remote changes and merge
-      setSyncState("downloading");
-      setSyncMsg("Checking remote…");
-      const dlRes = await fetch(url);
-      let itemsReceived = 0;
-      if (dlRes.ok) {
-        const remote = await dlRes.json();
-        const result = await onMergeSync(remote);
-        itemsReceived = result.itemsUpdated;
+      if (restoring) {
+        // Restore: the server re-checks the file's seal AND the OTP; only then is the DB written
+        await postJson("/api/otp/verify", {
+          email: restoring.email,
+          otp,
+          keyHash: await keyFingerprint(restoring.cryptoKey),
+          restoreSeal: restoring.seal,
+        });
+        await saveProfile(restoring.email, restoring.cryptoKey, restoring.seal);
+        setEmail(restoring.email);
+        setRestoring(null);
+        setKeyB64("");               // restored keys are not displayed
+        setLegacyKey(null);
+        setUnverifiedNote(false);
+        setStep("done");
+        return;
       }
-      // 404 = nothing stored yet — fine, upload will create it
+      const cryptoKey = legacyKey || await generateProfileKey();
+      const { seal } = await postJson("/api/otp/verify", { email, otp, keyHash: await keyFingerprint(cryptoKey) });
+      await saveProfile(email, cryptoKey, seal);
+      setLegacyKey(null);
+      setKeyB64(await exportKeyBase64(cryptoKey));
+      setStep("done");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-      // 2. Upload merged local snapshot
-      setSyncState("uploading");
+  /* Leave the OTP step. While restoring, go back to where the upload started (never to "new key"). */
+  function handleCancelOtp() {
+    setError(""); setInfo(""); setOtp("");
+    if (restoring) {
+      setStep(restoring.from);
+      setRestoring(null);
+    } else {
+      setStep("email");
+    }
+  }
+
+  /* Recovery: upload Kahija_Key.txt -> seal checked first (tampered file = error) -> OTP to the
+     file's email -> only then is the browser DB rebuilt. */
+  async function handleRestoreFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setError(""); setInfo("");
+    setBusy(true);
+    try {
+      if (file.size > 10 * 1024) throw new Error("This is not a valid Kahija key file.");
+      const prepared = await prepareRestore(await file.text()); // throws if modified / not genuine
+      setRestoring({ ...prepared, from: step });
+      try {
+        await sendOtpTo(prepared.email, prepared.cryptoKey);
+      } catch (err) {
+        setRestoring(null);
+        throw err;
+      }
+    } catch (err) {
+      setError(err.message || "Could not restore from this file.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /* Always reads the key from the browser DB, so it can be downloaded any time,
+     even when it is not displayed on screen. */
+  async function handleDownloadKey() {
+    setError("");
+    try {
+      const saved = await loadProfile();
+      if (!saved.cryptoKey || !saved.email) throw new Error("No key found in this browser.");
+      // Never hand out a key that fails its integrity check
+      const integrity = await checkProfileIntegrity(saved.email, saved.cryptoKey, saved.seal);
+      if (integrity === "invalid") { setStep("tampered"); return; }
+      if (integrity !== "valid") throw new Error("Could not verify your key right now. Check your connection and try again.");
+      const b64  = await exportKeyBase64(saved.cryptoKey);
+      const text = buildKeyFile(saved.email, b64, saved.seal);
+      const url  = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+      const a    = document.createElement("a");
+      a.href = url;
+      a.download = "Kahija_Key.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setKeyB64(""); // hide the key on screen once it has been downloaded
+    } catch (err) {
+      console.error("Key download failed:", err);
+      setError(err.message || "Could not download the key.");
+    }
+  }
+
+  /* ── Cloud sync (Supabase). Data is encrypted in the browser with the Kahija key; the server
+        stores it under the verified email and only checks the profile's seal. ── */
+  async function cloudCall(action, payload) {
+    const saved = await loadProfile();
+    if (!saved.email || !saved.cryptoKey || !saved.seal) throw new Error("Verify your email first.");
+    const data = await postJson("/api/profile/sync", {
+      action, email: saved.email, keyHash: await keyFingerprint(saved.cryptoKey), seal: saved.seal, payload,
+    });
+    return { data, cryptoKey: saved.cryptoKey };
+  }
+
+  function flash(setState, setMsg, state, msg, ms = 4000) {
+    setState(state); setMsg(msg);
+    setTimeout(() => { setState(null); setMsg(""); }, ms);
+  }
+
+  async function handleSync() {
+    setSyncState("syncing"); setSyncMsg("Checking cloud…");
+    try {
+      // 1. Pull and merge what is already in the cloud. If it can't be decrypted we stop,
+      //    so an upload can never overwrite data we couldn't read.
+      const { data: got, cryptoKey } = await cloudCall("get");
+      let pulled = 0;
+      if (got.payload) {
+        pulled = (await onMergeSync(await decryptJson(cryptoKey, got.payload)))?.itemsUpdated || 0;
+      }
+      // 2. Upload the merged local snapshot
       setSyncMsg("Uploading…");
-      const snapshot  = await onGetSyncData();
-      const uploadRes = await fetch(url, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(snapshot),
-      });
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({}));
-        throw new Error(err.error || `Upload failed (${uploadRes.status})`);
-      }
-
-      setSyncState("done");
-      setSyncMsg(
-        itemsReceived > 0
-          ? `Synced ✓ — ${itemsReceived} item${itemsReceived !== 1 ? "s" : ""} pulled`
-          : "Synced ✓ — up to date"
-      );
-      setTimeout(() => { setSyncState(null); setSyncMsg(""); }, 4000);
+      const snapshot = await onGetSyncData();
+      if (!snapshot) throw new Error("Local data is not ready yet. Try again in a moment.");
+      await cloudCall("put", await encryptJson(cryptoKey, snapshot));
+      flash(setSyncState, setSyncMsg, "done",
+        pulled > 0 ? `Synced ✓ — ${pulled} item${pulled !== 1 ? "s" : ""} pulled` : "Synced ✓ — up to date");
     } catch (err) {
       console.error("Sync failed:", err);
-      setSyncState("error");
-      setSyncMsg(`Sync failed: ${err.message}`);
-      setTimeout(() => { setSyncState(null); setSyncMsg(""); }, 5000);
+      flash(setSyncState, setSyncMsg, "error", `Sync failed: ${err.message}`, 5000);
     }
   }
 
-  /* ── Clear stored data ────────────────────────────── */
-  async function handleClearDrive() {
-    setClearState("clearing");
-    setClearMsg("");
+  async function handleClearCloud() {
+    if (cloudClear === null) { setCloudClear("confirm"); return; }
+    if (cloudClear !== "confirm") return;
+    setCloudClear("clearing");
     try {
-      const res  = await fetch(`/api/sync?backend=${backend}`, { method: "DELETE" });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || `Failed (${res.status})`);
-      setClearState("done");
-      setClearMsg(body.message || "Cleared ✓");
-      setTimeout(() => { setClearState(null); setClearMsg(""); }, 4000);
+      await cloudCall("delete");
+      flash(setCloudClear, setCloudMsg, "done", "Cloud data cleared ✓");
     } catch (err) {
-      setClearState("error");
-      setClearMsg(`Error: ${err.message}`);
-      setTimeout(() => { setClearState(null); setClearMsg(""); }, 5000);
+      console.error("Clear cloud failed:", err);
+      flash(setCloudClear, setCloudMsg, "error", `Error: ${err.message}`, 5000);
     }
   }
 
-  /* ── Clear local DB ───────────────────────────────── */
   async function handleClearLocal() {
-    if (localClearState === null) {
-      // First tap — show confirmation
-      setLocalClearState("confirm");
-      return;
-    }
-    if (localClearState === "confirm") {
-      // Second tap — actually clear
-      setLocalClearState("clearing");
-      try {
-        await onClearLocalDB();
-        setLocalClearState("done");
-        setTimeout(() => setLocalClearState(null), 3000);
-      } catch (err) {
-        console.error("Clear local DB failed:", err);
-        setLocalClearState("error");
-        setTimeout(() => setLocalClearState(null), 4000);
-      }
-    }
-  }
-
-  async function handleRemoveKahijaCalendar() {
-    setCalState("deleting");
+    if (localClear === null) { setLocalClear("confirm"); return; }
+    if (localClear !== "confirm") return;
+    setLocalClear("clearing");
     try {
-      const res = await fetch("/api/calendar/delete-all", { method: "DELETE" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || `Failed (${res.status})`);
-      setCalState("done");
-      setCalMsg(body.deleted ? "Kahija calendar removed ✓" : "No Kahija calendar found");
-      setTimeout(() => { setCalState(null); setCalMsg(""); }, 4000);
+      await onClearLocalDB();
+      flash(setLocalClear, () => {}, "done", "", 3000);
     } catch (err) {
-      console.error("[delete-kahija-calendar] failed:", err);
-      setCalState("error");
-      setCalMsg(`Error: ${err.message}`);
-      setTimeout(() => { setCalState(null); setCalMsg(""); }, 5000);
+      console.error("Clear local DB failed:", err);
+      flash(setLocalClear, () => {}, "error", "", 4000);
     }
   }
 
-
-  const syncBusy = syncState === "uploading" || syncState === "downloading";
+  const verified = step === "done";
 
   return (
     <div className={styles.wrap}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.title}>Profile</div>
-          <div className={styles.sub}>Sign in to sync and personalize your experience</div>
+          <div className={styles.sub}>Verify your email and secure your data</div>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
@@ -161,156 +272,206 @@ export default function Profile({ onGetSyncData, onMergeSync, storageBackend, on
 
       <div className={styles.body}>
         <div className={styles.card}>
+          {step === "loading" && <div className={styles.cardText}>Loading…</div>}
 
-          {/* ── Sign in / out ── */}
-          <div className={styles.cardTitle}>
-            {isSignedIn ? 
-              `Signed in as ${session.user?.email || session.user?.name || "Google user"}` : "Login options"
-            }
-          </div>
-          <div className={styles.cardText}>
-            {!isSignedIn && (
-              "Sign in to access your data anywhere, across devices."
-            )}
-          </div>
-
-          {isSignedIn ? (
+          {step === "email" && (
             <>
-              {session?.error === "RefreshAccessTokenError" && (
-                <div className={styles.tokenError}>
-                  Session expired — please sign in again.
+              <div className={styles.cardTitle}>Your email</div>
+              <div className={styles.cardText}>{info || "Enter your email and we will send you a one-time code."}</div>
+              <input
+                type="email"
+                className={styles.textInput}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !busy && handleSendOtp()}
+                placeholder="you@example.com"
+                autoComplete="email"
+                aria-label="Email address"
+              />
+              <button className={styles.primaryBtn} onClick={handleSendOtp} disabled={busy}>
+                {busy ? "Sending…" : "Send code"}
+              </button>
+
+              <div className={styles.sectionLabel} style={{ marginTop: 20 }}>Already have a key?</div>
+              <div className={styles.cardText}>
+                Restore your profile by uploading the Kahija_Key.txt you downloaded earlier.
+                We will email a code to confirm it is you.
+              </div>
+              <label className={`${styles.secondaryBtn} ${busy ? styles.secondaryBtnDisabled : ""}`}>
+                Upload Kahija_Key.txt
+                <input
+                  type="file"
+                  accept=".txt,text/plain"
+                  onChange={handleRestoreFile}
+                  disabled={busy}
+                  style={{ display: "none" }}
+                />
+              </label>
+            </>
+          )}
+
+          {step === "tampered" && (
+            <>
+              <div className={styles.cardTitle}>Profile integrity check failed</div>
+              <div className={styles.keyWarning}>
+                The email or key stored in this browser does not match its security seal. It may have been
+                modified, so it has been blocked and will not be used or downloaded.
+              </div>
+              <div className={styles.cardText}>
+                To recover, upload your original Kahija_Key.txt. We will email a code to confirm it is you,
+                and it will then replace the stored profile.
+              </div>
+              <label className={`${styles.secondaryBtn} ${busy ? styles.secondaryBtnDisabled : ""}`}>
+                Upload Kahija_Key.txt
+                <input
+                  type="file"
+                  accept=".txt,text/plain"
+                  onChange={handleRestoreFile}
+                  disabled={busy}
+                  style={{ display: "none" }}
+                />
+              </label>
+            </>
+          )}
+
+          {step === "otp" && (
+            <>
+              <div className={styles.cardTitle}>{restoring ? "Confirm it's you" : "Enter the code"}</div>
+              {restoring && (
+                <div className={styles.cardText}>Your key file is genuine. Enter the code to restore your profile.</div>
+              )}
+              {info && <div className={styles.cardText}>{info}</div>}
+              <div className={styles.backendNote}>
+                Can&apos;t find the email? Check your spam or junk folder.
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                className={`${styles.textInput} ${styles.otpInput}`}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && !busy && handleVerify()}
+                placeholder="000000"
+                autoComplete="one-time-code"
+                aria-label="6-digit code"
+                autoFocus
+              />
+              <button className={styles.primaryBtn} onClick={handleVerify} disabled={busy}>
+                {busy ? "Verifying…" : "Verify"}
+              </button>
+              <div className={styles.linkRow}>
+                <button type="button" className={styles.linkBtn} onClick={handleSendOtp} disabled={busy}>
+                  Resend code
+                </button>
+                <button type="button" className={styles.linkBtn} onClick={handleCancelOtp} disabled={busy}>
+                  {restoring ? "Cancel" : "Change email"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === "done" && (
+            <>
+              <div className={styles.cardTitle}>Verified ✓</div>
+              <div className={styles.cardText}>{email}</div>
+              {unverifiedNote && (
+                <div className={styles.backendNote}>
+                  Could not re-check your profile&apos;s integrity (offline?). Downloads are disabled until it can be checked.
                 </div>
               )}
-              <button className={styles.googleBtn} onClick={() => signOut({ redirect: false })}>
-                Sign out
+
+              <div className={styles.sectionLabel} style={{ marginTop: 16 }}>Your encryption key</div>
+              {keyB64 ? (
+                <div className={styles.keyBox}>{keyB64}</div>
+              ) : (
+                <div className={styles.cardText}>
+                  Your key is stored securely in this browser and is not displayed.
+                </div>
+              )}
+              <button className={styles.primaryBtn} onClick={handleDownloadKey}>
+                Download Kahija_Key.txt
               </button>
+              <div className={styles.keyWarning}>
+                Keep this key safe and secure. If you lose it, your data cannot be recovered.
+              </div>
             </>
-          ) : (
-            <button className={styles.googleBtn} onClick={() => signIn("google", { redirect: false })}>
-              Continue with Google
-            </button>
           )}
 
-          {/* ── Storage backend — Kahija DB only (Google Drive hidden for now) ── */}
-          {isSignedIn && (
-            <div className={styles.backendNote} style={{ marginTop: 12 }}>
-              Storage: <strong>Kahija DB</strong> — end to end encrypted (in-transit and at-rest).
+          {error && <div className={styles.errorMsg} role="alert">{error}</div>}
+        </div>
+
+        {step !== "loading" && (
+          <div className={styles.card} style={{ marginTop: 12 }}>
+            <div className={styles.sectionLabel} style={{ marginTop: 0 }}>Cloud sync</div>
+            <div className={styles.cardText} style={{ marginTop: 0 }}>
+              {verified
+                ? "Your activities and transcripts are encrypted with your Kahija key before they leave this device."
+                : "Verify your email to turn on cloud sync."}
             </div>
-          )}
-
-          {/* ── Sync + Clear stored data — same row ── */}
-          {isSignedIn && (
             <div className={styles.btnRow}>
               <button
                 className={`${styles.syncBtn} ${
-                  syncState === "done"  ? styles.syncBtnDone  :
-                  syncState === "error" ? styles.syncBtnError : ""
+                  syncState === "done" ? styles.syncBtnDone : syncState === "error" ? styles.syncBtnError : ""
                 }`}
                 onClick={handleSync}
-                disabled={syncBusy}
+                disabled={!verified || syncState === "syncing"}
               >
-                {syncBusy
-                  ? syncMsg
-                  : syncState === "done"  ? syncMsg
-                  : syncState === "error" ? syncMsg
-                  : "Sync to Kahija DB"}
+                {syncState ? syncMsg : "Sync to Kahija DB"}
               </button>
               <button
-                className={`${styles.clearDriveBtn} ${
-                  clearState === "done"  ? styles.clearDriveBtnDone  :
-                  clearState === "error" ? styles.clearDriveBtnError : ""
+                className={`${styles.clearCloudBtn} ${
+                  cloudClear === "confirm" ? styles.clearBtnConfirm :
+                  cloudClear === "done"    ? styles.clearBtnDone    :
+                  cloudClear === "error"   ? styles.clearBtnError   : ""
                 }`}
-                onClick={handleClearDrive}
-                disabled={clearState === "clearing"}
+                onClick={handleClearCloud}
+                disabled={!verified || cloudClear === "clearing" || cloudClear === "done"}
               >
-                {clearState === "clearing" ? "Clearing…" : clearState ? clearMsg : "Clear Stored Data"}
+                {cloudClear === "confirm"  ? "Tap again to confirm" :
+                 cloudClear === "clearing" ? "Clearing…" :
+                 cloudClear                ? cloudMsg :
+                 "Clear Cloud Data"}
               </button>
             </div>
-          )}
-          {/* ── Clear local data — always visible, no sign-in required ── */}
-          <div className={styles.sectionLabel} style={{ marginTop: 20 }}>
-            Local storage
-            <span className={styles.infoWrap}>
-              <span className={styles.infoIcon}>ⓘ</span>
-              <span className={styles.infoTooltip}>
-                Removes all recordings, transcripts and activities stored on this device. Your settings are kept. This does not affect any cloud backup.
+            {cloudClear === "confirm" && (
+              <div className={styles.backendNote} style={{ color: "#c2410c" }}>
+                This permanently deletes your synced copy from Kahija DB. Data on this device is not affected.
+              </div>
+            )}
+
+            <div className={styles.sectionLabel} style={{ marginTop: 20 }}>
+              Local storage
+              <span className={styles.infoWrap}>
+                <span className={styles.infoIcon}>ⓘ</span>
+                <span className={styles.infoTooltip}>
+                  Removes all recordings, transcripts and activities stored on this device. Your settings and key are kept. This does not affect your cloud copy.
+                </span>
               </span>
-            </span>
-          </div>
-          <button
-            className={`${styles.clearLocalBtn} ${
-              localClearState === "confirm" ? styles.clearLocalBtnConfirm :
-              localClearState === "done"    ? styles.clearLocalBtnDone    :
-              localClearState === "error"   ? styles.clearLocalBtnError   : ""
-            }`}
-            onClick={handleClearLocal}
-            disabled={localClearState === "clearing" || localClearState === "done"}
-          >
-            {localClearState === "confirm"  ? "Tap again to confirm — this cannot be undone" :
-             localClearState === "clearing" ? "Clearing…" :
-             localClearState === "done"     ? "Local data cleared ✓" :
-             localClearState === "error"    ? "Failed — try again" :
-             "Clear Local Data"}
-          </button>
-          {localClearState === "confirm" && (
-            <div className={styles.clearLocalNote} style={{ color: "#c2410c" }}>
-              Tap the button above again to confirm. Or navigate away to cancel.
             </div>
-          )}
-
-
-          {/* ── Export to Calendar — always visible ── */}
-          <div className={styles.sectionLabel} style={{ marginTop: 24 }}>
-            Calendar export
-            <span className={styles.infoWrap}>
-              <span className={styles.infoIcon}>ⓘ</span>
-              <span className={styles.infoTooltip}>
-                Preview and download an ICS file you can import into Google Calendar, Apple Calendar, or Outlook.
-              </span>
-            </span>
+            <button
+              className={`${styles.clearLocalBtn} ${
+                localClear === "confirm" ? styles.clearBtnConfirm :
+                localClear === "done"    ? styles.clearBtnDone    :
+                localClear === "error"   ? styles.clearBtnError   : ""
+              }`}
+              onClick={handleClearLocal}
+              disabled={localClear === "clearing" || localClear === "done"}
+            >
+              {localClear === "confirm"  ? "Tap again to confirm — this cannot be undone" :
+               localClear === "clearing" ? "Clearing…" :
+               localClear === "done"     ? "Local data cleared ✓" :
+               localClear === "error"    ? "Failed — try again" :
+               "Clear Local Data"}
+            </button>
+            {localClear === "confirm" && (
+              <div className={styles.backendNote} style={{ color: "#c2410c" }}>
+                Tap the button above again to confirm. Or navigate away to cancel.
+              </div>
+            )}
           </div>
-          <button
-            className={styles.exportICSBtn}
-            onClick={() => setShowICSModal(true)}
-          >
-            Export Activities to Calendar (.ics)
-          </button>
-          {/* Calendar sync section hidden for now */}
-
-
-
-          {/* ── View Sync JSON ── */}
-          {/*<button
-            className={styles.syncJsonBtn}
-            onClick={handleViewSync}
-            disabled={jsonLoading}
-          >
-            {jsonLoading ? "Loading…" : "View Sync JSON"}
-          </button> */}
-        </div>
+        )}
       </div>
-
-      {/* ICS export modal */}
-      {showICSModal && (
-        <ExportICSModal
-          items={items || []}
-          onClose={() => setShowICSModal(false)}
-          isSignedIn={isSignedIn}
-        />
-      )}
-
-      {/* Sync JSON modal */}
-      {syncJson !== null && (
-        <div className={styles.modalOverlay} onClick={() => setSyncJson(null)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <span className={styles.modalTitle}>Sync Snapshot</span>
-              <button className={styles.modalClose} onClick={() => setSyncJson(null)}>✕</button>
-            </div>
-            <pre className={styles.jsonPre}>{syncJson}</pre>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
