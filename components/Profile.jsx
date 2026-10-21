@@ -59,11 +59,15 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
             setStep("done");              // never display the key again
           }
         } else {
+          setInfo("Sign in to create your profile and enable cloud sync.");
           setStep("email");
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
-        if (mounted) setStep("email");
+        if (mounted) {
+          setInfo("Sign in to create your profile and enable cloud sync.");
+          setStep("email");
+        }
       }
     })();
     return () => { mounted = false; };
@@ -277,7 +281,7 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
           {step === "email" && (
             <>
               <div className={styles.cardTitle}>Your email</div>
-              <div className={styles.cardText}>{info || "Enter your email and we will send you a one-time code."}</div>
+              <div className={styles.cardText}>{info}</div>
               <input
                 type="email"
                 className={styles.textInput}

@@ -1,9 +1,6 @@
 import Head from "next/head";
 import { useState, useEffect } from "react";
 
-const GOOGLE_FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&display=swap";
-
 import useOrganizerDB from "../hooks/useOrganizerDB";
 import TabBar         from "../components/TabBar";
 import Dashboard      from "../components/Dashboard";
@@ -189,9 +186,6 @@ export default function Home() {
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
         <link rel="icon" type="image/png" href="/K_ico.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href={GOOGLE_FONTS_URL} />
       </Head>
 
       <div className={pageStyles.shell}>
