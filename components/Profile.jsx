@@ -59,13 +59,13 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
             setStep("done");              // never display the key again
           }
         } else {
-          setInfo("Sign in to create your profile and enable cloud sync.");
+          setInfo("Create your profile and enable cloud sync.");
           setStep("email");
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
         if (mounted) {
-          setInfo("Sign in to create your profile and enable cloud sync.");
+          setInfo("Create your profile and enable cloud sync.");
           setStep("email");
         }
       }
@@ -280,8 +280,7 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
 
           {step === "email" && (
             <>
-              <div className={styles.cardTitle}>Your email</div>
-              <div className={styles.cardText}>{info}</div>
+              <div className={styles.cardText}><strong>SIGN IN:</strong> {info}</div>
               <input
                 type="email"
                 className={styles.textInput}
@@ -296,10 +295,8 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
                 {busy ? "Sending…" : "Send code"}
               </button>
 
-              <div className={styles.sectionLabel} style={{ marginTop: 20 }}>Already have a key?</div>
-              <div className={styles.cardText}>
-                Restore your profile by uploading the Kahija_Key.txt you downloaded earlier.
-                We will email a code to confirm it is you.
+              <div className={styles.cardText} style={{ marginTop: 20 }}>
+                <strong>ALREADY HAVE A KEY?</strong> Restore your profile by uploading the Kahija_Key.txt you downloaded earlier. We will email a code to confirm it is you.
               </div>
               <label className={`${styles.secondaryBtn} ${busy ? styles.secondaryBtnDisabled : ""}`}>
                 Upload Kahija_Key.txt
@@ -407,11 +404,10 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
 
         {step !== "loading" && (
           <div className={styles.card} style={{ marginTop: 12 }}>
-            <div className={styles.sectionLabel} style={{ marginTop: 0 }}>Cloud sync</div>
             <div className={styles.cardText} style={{ marginTop: 0 }}>
               {verified
-                ? "Your activities and transcripts are encrypted with your Kahija key before they leave this device."
-                : "Verify your email to turn on cloud sync."}
+                ? <><strong>CLOUD SYNC:</strong> Your activities and transcripts are encrypted with your Kahija key before they leave this device.</>
+                : <><strong>CLOUD SYNC:</strong> Verify your email to turn on cloud sync.</>}
             </div>
             <div className={styles.btnRow}>
               <button

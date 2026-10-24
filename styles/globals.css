@@ -67,6 +67,7 @@ button {
   padding: 12px 14px;
   font-size: 14px;
   font-weight: 600;
+  font-family: inherit;
   border: none;
   border-radius: 8px;
   cursor: pointer;

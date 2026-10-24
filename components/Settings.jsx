@@ -25,7 +25,7 @@ const FONT_OPTIONS = [
   { value: "'Trebuchet MS', Helvetica, sans-serif", label: "Trebuchet MS" },
   { value: "Tahoma, Geneva, sans-serif",            label: "Tahoma" },
   { value: "Verdana, Geneva, sans-serif",           label: "Verdana" },
-  // Google Fonts (require the <link> in <Head>)
+  // Google Fonts (require the <link> in _document.js)
   { value: "'Inter', sans-serif",                   label: "Inter" },
   { value: "'Lato', sans-serif",                    label: "Lato" },
   { value: "'Merriweather', Georgia, serif",        label: "Merriweather" },
@@ -33,28 +33,39 @@ const FONT_OPTIONS = [
 ];
 
 export const LIGHT_COLOR_THEMES = [
-  { id: "pure-white", label: "White",    bg: "#ffffff", card: "#ffffff", border: "#e2e8f0" },
-  { id: "slate",      label: "Slate",    bg: "#f8fafc", card: "#ffffff", border: "#e2e8f0" },
-  { id: "gray",       label: "Cool Gray",bg: "#f3f4f6", card: "#ffffff", border: "#e5e7eb" },
-  { id: "zinc",       label: "Zinc",     bg: "#fafafa", card: "#ffffff", border: "#e4e4e7" },
-  { id: "warm-cream", label: "Cream",    bg: "#fdfbf7", card: "#ffffff", border: "#eae5d9" },
-  { id: "soft-amber", label: "Amber",    bg: "#fffbeb", card: "#ffffff", border: "#fde68a" },
-  { id: "soft-sky",   label: "Sky",      bg: "#f0f9ff", card: "#ffffff", border: "#bae6fd" },
-  { id: "mint",       label: "Mint",     bg: "#f0fdf4", card: "#ffffff", border: "#bbf7d0" },
-  { id: "lavender",   label: "Lavender", bg: "#f5f3ff", card: "#ffffff", border: "#ddd6fe" },
-  { id: "rose",       label: "Rose",     bg: "#fff1f2", card: "#ffffff", border: "#fecdd3" },
+  { id: "pure-white", label: "White",     bg: "#ffffff", card: "#ffffff", border: "#e2e8f0" },
+  { id: "slate",      label: "Slate",     bg: "#f8fafc", card: "#ffffff", border: "#e2e8f0" },
+  { id: "gray",       label: "Cool Gray", bg: "#f3f4f6", card: "#ffffff", border: "#e5e7eb" },
+  { id: "zinc",       label: "Zinc",      bg: "#fafafa", card: "#ffffff", border: "#e4e4e7" },
+  { id: "warm-cream", label: "Cream",     bg: "#fdfbf7", card: "#ffffff", border: "#eae5d9" },
+  { id: "soft-amber", label: "Amber",     bg: "#fffbeb", card: "#ffffff", border: "#fde68a" },
+  { id: "soft-sky",   label: "Sky",       bg: "#f0f9ff", card: "#ffffff", border: "#bae6fd" },
+  { id: "mint",       label: "Mint",      bg: "#f0fdf4", card: "#ffffff", border: "#bbf7d0" },
+  { id: "lavender",   label: "Lavender",  bg: "#f5f3ff", card: "#ffffff", border: "#ddd6fe" },
+  { id: "rose",       label: "Rose",      bg: "#fff1f2", card: "#ffffff", border: "#fecdd3" },
+];
+
+const NAV_SECTIONS = [
+  { id: "recording",   icon: "🎙️", label: "Recording" },
+  { id: "ai",          icon: "🤖", label: "AI / A2T"  },
+  { id: "appearance",  icon: "🎨", label: "Appearance" },
+  { id: "tasks",       icon: "✅", label: "Tasks"      },
+  { id: "storage",     icon: "🗄️", label: "Storage"   },
+  { id: "about",       icon: "ℹ️", label: "About"     },
 ];
 
 export default function Settings({ dbWarning, recordingsCount, settings, onSettingChange, onShowOnboarding }) {
+  const [activeSection, setActiveSection] = useState("recording");
+
   const localTimezone = typeof Intl !== "undefined"
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
     : "UTC";
-  const silenceSec = Math.min(settings.silenceSec ?? 2, 5); // capped at 5s (auto-pause fires at 5s)
+  const silenceSec = Math.min(settings.silenceSec ?? 2, 5);
   const currentTimezone = settings.userTimezone || localTimezone;
-  // Keep the user's current zone selectable even if it isn't in the short list
   const timezoneOptions = TIMEZONE_OPTIONS.includes(currentTimezone)
     ? TIMEZONE_OPTIONS
     : [currentTimezone, ...TIMEZONE_OPTIONS];
+
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(settings.userName);
 
@@ -79,6 +90,8 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
 
   return (
     <div className={styles.wrap}>
+
+      {/* ── Header ── */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.title}>Settings</div>
@@ -87,167 +100,193 @@ export default function Settings({ dbWarning, recordingsCount, settings, onSetti
         <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
       </div>
 
-      <div className={styles.scroll}>
+      {/* ── Body: left nav + content ── */}
+      <div className={styles.body}>
 
-        {/* Recording */}
-        <div className={styles.group}>
-          <div className={styles.groupLabel}>Recording</div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>🔇</span>
-            <span className={styles.rowLabel}>Auto-pause on silence [5 sec]</span>
+        {/* Left nav */}
+        <nav className={styles.nav}>
+          {NAV_SECTIONS.map((s) => (
             <button
-              className={`${styles.toggle} ${styles.toggleOn} ${styles.toggleLocked}`}
-              aria-label="Auto-pause always on"
-              disabled
+              key={s.id}
+              className={`${styles.navItem} ${activeSection === s.id ? styles.navItemActive : ""}`}
+              onClick={() => setActiveSection(s.id)}
             >
-              <span className={styles.toggleThumb} />
+              <span className={styles.navLabel}>{s.label}</span>
             </button>
-          </div>
+          ))}
+        </nav>
 
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>⏱</span>
-            <span className={styles.rowLabel}>Silence timeout</span>
-            <div className={styles.stepper}>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.max(2, silenceSec - 1))}>−</button>
-              <span className={styles.stepVal}>{silenceSec}s</span>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.min(5, silenceSec + 1))}>+</button>
-            </div>
-          </div>
-        </div>
+        {/* Content panel */}
+        <div className={styles.content}>
 
-        {/* AI / A2T */}
-        <div className={styles.group}>
-          <div className={styles.groupLabel}>AI / A2T</div>
+          {activeSection === "recording" && (
+            <>
+              <div className={styles.groupLabel}>Recording</div>
 
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>👤</span>
-            <span className={styles.rowLabel}>User name</span>
-            {editingName ? (
-              <div className={styles.nameEdit}>
-                <input
-                  className={styles.nameInput}
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveName()}
-                  autoFocus
-                />
-                <button className={styles.nameSave} onClick={saveName}>Save</button>
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>🔇</span>
+                <span className={styles.rowLabel}>Auto-pause on silence [5 sec]</span>
+                <button
+                  className={`${styles.toggle} ${styles.toggleOn} ${styles.toggleLocked}`}
+                  aria-label="Auto-pause always on"
+                  disabled
+                >
+                  <span className={styles.toggleThumb} />
+                </button>
               </div>
-            ) : (
-              <button className={styles.rowVal} onClick={() => { setNameInput(settings.userName); setEditingName(true); }}>
-                {settings.userName} ›
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>⏱</span>
+                <span className={styles.rowLabel}>Silence timeout</span>
+                <div className={styles.stepper}>
+                  <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.max(2, silenceSec - 1))}>−</button>
+                  <span className={styles.stepVal}>{silenceSec}s</span>
+                  <button className={styles.stepBtn} onClick={() => onSettingChange("silenceSec", Math.min(5, silenceSec + 1))}>+</button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeSection === "ai" && (
+            <>
+              <div className={styles.groupLabel}>AI / A2T</div>
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>👤</span>
+                <span className={styles.rowLabel}>User name</span>
+                {editingName ? (
+                  <div className={styles.nameEdit}>
+                    <input
+                      className={styles.nameInput}
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && saveName()}
+                      autoFocus
+                    />
+                    <button className={styles.nameSave} onClick={saveName}>Save</button>
+                  </div>
+                ) : (
+                  <button className={styles.rowVal} onClick={() => { setNameInput(settings.userName); setEditingName(true); }}>
+                    {settings.userName} ›
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>🌍</span>
+                <span className={styles.rowLabel}>Time zone</span>
+                <select
+                  className={styles.fontSelect}
+                  value={currentTimezone}
+                  onChange={(e) => onSettingChange("userTimezone", e.target.value)}
+                >
+                  {timezoneOptions.map((tz) => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          {activeSection === "appearance" && (
+            <>
+              <div className={styles.groupLabel}>Appearance</div>
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>🔤</span>
+                <span className={styles.rowLabel}>Font</span>
+                <select
+                  className={styles.fontSelect}
+                  value={settings.fontFamily || FONT_OPTIONS[0].value}
+                  onChange={(e) => onSettingChange("fontFamily", e.target.value)}
+                >
+                  {FONT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>🎨</span>
+                <span className={styles.rowLabel}>Page Background</span>
+                <select
+                  className={styles.fontSelect}
+                  value={settings.themeColor || "pure-white"}
+                  onChange={(e) => onSettingChange("themeColor", e.target.value)}
+                >
+                  {LIGHT_COLOR_THEMES.map((theme) => (
+                    <option key={theme.id} value={theme.id}>{theme.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>📅</span>
+                <span className={styles.rowLabel}>Schedule window</span>
+                <div className={styles.stepper}>
+                  <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.max(3, (settings.scheduleWindow ?? 7) - 1))}>−</button>
+                  <span className={styles.stepVal}>{settings.scheduleWindow ?? 7}d</span>
+                  <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.min(30, (settings.scheduleWindow ?? 7) + 1))}>+</button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeSection === "tasks" && (
+            <>
+              <div className={styles.groupLabel}>Tasks</div>
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>✅</span>
+                <span className={styles.rowLabel}>Show completed items</span>
+                <button
+                  className={`${styles.toggle} ${settings.showCompletedItems ? styles.toggleOn : ""}`}
+                  onClick={() => onSettingChange("showCompletedItems", !settings.showCompletedItems)}
+                  aria-label="Toggle completed items"
+                >
+                  <span className={styles.toggleThumb} />
+                </button>
+              </div>
+            </>
+          )}
+
+          {activeSection === "storage" && (
+            <>
+              <div className={styles.groupLabel}>Storage</div>
+
+              {isLikelyWebView && (
+                <div className={styles.webViewWarning}>
+                  Audio recording and transcription may not work correctly inside this WebView. Open Kahija in your browser for the best experience.
+                </div>
+              )}
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>🗄️</span>
+                <span className={styles.rowLabel}>Recordings</span>
+                <span className={styles.rowValMuted}>{recordingsCount} file{recordingsCount !== 1 ? "s" : ""}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span className={styles.rowIcon}>📊</span>
+                <span className={styles.rowLabel}>Space used</span>
+                <span className={styles.rowValMuted}>{totalMB}</span>
+              </div>
+            </>
+          )}
+
+          {activeSection === "about" && (
+            <>
+              <div className={styles.groupLabel}>About</div>
+
+              <button className={styles.rowButton} onClick={onShowOnboarding}>
+                <span className={styles.rowIcon}>ℹ️</span>
+                <span className={styles.rowLabel}>How Kahija (v1.0) works</span>
+                <span className={styles.rowValMuted}>›</span>
               </button>
-            )}
-          </div>
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>🌍</span>
-            <span className={styles.rowLabel}>Time zone</span>
-            <select
-              className={styles.fontSelect}
-              value={currentTimezone}
-              onChange={(e) => onSettingChange("userTimezone", e.target.value)}
-            >
-              {timezoneOptions.map((tz) => (
-                <option key={tz} value={tz}>{tz}</option>
-              ))}
-            </select>
-          </div>
+            </>
+          )}
+
         </div>
-
-        {/* Appearance */}
-        <div className={styles.group}>
-          <div className={styles.groupLabel}>Appearance</div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>🔤</span>
-            <span className={styles.rowLabel}>Font</span>
-            <select
-              className={styles.fontSelect}
-              value={settings.fontFamily || FONT_OPTIONS[0].value}
-              onChange={(e) => onSettingChange("fontFamily", e.target.value)}
-            >
-              {FONT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>🎨</span>
-            <span className={styles.rowLabel}>Page Background</span>
-            <select
-              className={styles.fontSelect}
-              value={settings.themeColor || "pure-white"}
-              onChange={(e) => onSettingChange("themeColor", e.target.value)}
-            >
-              {LIGHT_COLOR_THEMES.map((theme) => (
-                <option key={theme.id} value={theme.id}>{theme.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>📅</span>
-            <span className={styles.rowLabel}>Schedule window</span>
-            <div className={styles.stepper}>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.max(3, (settings.scheduleWindow ?? 7) - 1))}>−</button>
-              <span className={styles.stepVal}>{settings.scheduleWindow ?? 7}d</span>
-              <button className={styles.stepBtn} onClick={() => onSettingChange("scheduleWindow", Math.min(30, (settings.scheduleWindow ?? 7) + 1))}>+</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tasks */}
-        <div className={styles.group}>
-          <div className={styles.groupLabel}>Tasks</div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>✅</span>
-            <span className={styles.rowLabel}>Show completed items</span>
-            <button
-              className={`${styles.toggle} ${settings.showCompletedItems ? styles.toggleOn : ""}`}
-              onClick={() => onSettingChange("showCompletedItems", !settings.showCompletedItems)}
-              aria-label="Toggle completed items"
-            >
-              <span className={styles.toggleThumb} />
-            </button>
-          </div>
-        </div>
-
-        {/* Storage */}
-        <div className={styles.group}>
-          <div className={styles.groupLabel}>Storage</div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>🗄️</span>
-            <span className={styles.rowLabel}>Recordings</span>
-            <span className={styles.rowValMuted}>{recordingsCount} file{recordingsCount !== 1 ? "s" : ""}</span>
-          </div>
-
-          <div className={styles.row}>
-            <span className={styles.rowIcon}>📊</span>
-            <span className={styles.rowLabel}>Space used</span>
-            <span className={styles.rowValMuted}>{totalMB}</span>
-          </div>
-        </div>
-
-        {isLikelyWebView && (
-          <div className={styles.webViewWarning}>
-            Audio recording and transcription may not work correctly inside this WebView. Open Kahija in your browser for the best experience.
-          </div>
-        )}
-
-        {/* About */}
-        <div className={styles.group}>
-          <div className={styles.groupLabel}>About</div>
-          <button className={styles.rowButton} onClick={onShowOnboarding}>
-            <span className={styles.rowIcon}>ℹ️</span>
-            <span className={styles.rowLabel}>How Kahija (v1.0) works</span>
-            <span className={styles.rowValMuted}>›</span>
-          </button>
-        </div>
-
       </div>
     </div>
   );
