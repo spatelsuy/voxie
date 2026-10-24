@@ -1,0 +1,441 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings — Left Nav Design</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* ── Phone shell ─────────────────────────────────── */
+  .phone {
+    width: 390px;
+    height: 780px;
+    background: #ffffff;
+    border-radius: 40px;
+    border: 8px solid #1f2328;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── Top bar ─────────────────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+  .topbar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2328;
+  }
+  .topbar-logo {
+    width: 32px;
+    height: 32px;
+    background: #0284c7;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  /* ── Body: nav + content ─────────────────────────── */
+  .body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Left nav ────────────────────────────────────── */
+  .nav {
+    width: 130px;
+    flex-shrink: 0;
+    border-right: 1px solid #e5e7eb;
+    background: #f8fafc;
+    overflow-y: auto;
+    padding: 10px 0;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 11px 8px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+    text-align: center;
+  }
+  .nav-item:hover {
+    background: #e2e8f0;
+  }
+  .nav-item.active {
+    background: #eff6ff;
+    border-left-color: #0284c7;
+  }
+  .nav-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .nav-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #57606a;
+    line-height: 1.2;
+  }
+  .nav-item.active .nav-label {
+    color: #0284c7;
+  }
+
+  /* ── Content panel ───────────────────────────────── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px 32px;
+    background: #ffffff;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #57606a;
+    margin-bottom: 10px;
+  }
+
+  /* ── Setting row ─────────────────────────────────── */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 11px 12px;
+    margin-bottom: 6px;
+  }
+  .row-icon { font-size: 15px; flex-shrink: 0; }
+  .row-label { flex: 1; font-size: 13px; color: #1f2328; }
+  .row-val {
+    font-size: 12px;
+    color: #57606a;
+    background: #e2e8f0;
+    border-radius: 5px;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+
+  /* toggle */
+  .toggle {
+    width: 34px;
+    height: 19px;
+    border-radius: 99px;
+    background: #e2e8f0;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: #16a34a; }
+  .toggle.locked { opacity: 0.6; }
+  .thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .toggle.on .thumb { left: 18px; }
+
+  /* stepper */
+  .stepper { display: flex; align-items: center; gap: 5px; }
+  .step-btn {
+    width: 24px; height: 24px;
+    border-radius: 5px;
+    border: 1px solid #e5e7eb;
+    background: #e2e8f0;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #1f2328;
+    flex-shrink: 0;
+  }
+  .step-val { font-size: 12px; font-weight: 600; min-width: 26px; text-align: center; color: #1f2328; }
+
+  /* select */
+  .sel {
+    font-size: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 3px 6px;
+    background: #fff;
+    color: #1f2328;
+    max-width: 90px;
+  }
+
+  /* color swatches */
+  .palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 6px;
+  }
+  .swatch {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .swatch.active { border-color: #0284c7; }
+
+  /* link row */
+  .link-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    margin-bottom: 6px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .link-row .row-label { color: #1f2328; }
+  .chevron { color: #57606a; font-size: 14px; }
+
+  /* ── Bottom tab bar ───────────────────────────────── */
+  .tabbar {
+    display: flex;
+    border-top: 1px solid #e5e7eb;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px 6px;
+    cursor: pointer;
+  }
+  .tab-icon { font-size: 18px; }
+  .tab-label { font-size: 9px; font-weight: 600; color: #57606a; }
+  .tab.active .tab-label { color: #0284c7; }
+  .tab.active .tab-icon { filter: drop-shadow(0 0 2px rgba(2,132,199,0.4)); }
+
+  /* ── Right side: annotation panel ───────────────── */
+  .annotations {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-left: 32px;
+    width: 240px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    padding-top: 4px;
+  }
+  .ann-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2328;
+    margin-bottom: 4px;
+  }
+  .ann-sub {
+    font-size: 13px;
+    color: #57606a;
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .ann-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .ann-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1f2328;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .badge {
+    display: inline-block;
+    background: #0284c7;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  .ann-card p {
+    font-size: 12px;
+    color: #57606a;
+    line-height: 1.55;
+  }
+  .ann-card ul {
+    font-size: 12px;
+    color: #57606a;
+    line-height: 1.8;
+    padding-left: 16px;
+  }
+
+  .wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  
+  <div class="phone">
+
+    
+    <div class="topbar">
+      <div class="topbar-title">Settings</div>
+      <div class="topbar-logo">K</div>
+    </div>
+
+    
+    <div class="body">
+
+      
+      <nav class="nav">
+        <div class="nav-item active">
+          <span class="nav-icon">🎙️</span>
+          <span class="nav-label">Recording</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">🤖</span>
+          <span class="nav-label">AI / A2T</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">🎨</span>
+          <span class="nav-label">Appearance</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">✅</span>
+          <span class="nav-label">Tasks</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">🗄️</span>
+          <span class="nav-label">Storage</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-icon">ℹ️</span>
+          <span class="nav-label">About</span>
+        </div>
+      </nav>
+
+      
+      <div class="content">
+        <div class="section-title">Recording</div>
+
+        <div class="row">
+          <span class="row-icon">🔇</span>
+          <span class="row-label">Auto-pause on silence</span>
+          <div class="toggle on locked"><div class="thumb"></div></div>
+        </div>
+
+        <div class="row">
+          <span class="row-icon">⏱</span>
+          <span class="row-label">Silence timeout</span>
+          <div class="stepper">
+            <div class="step-btn">−</div>
+            <span class="step-val">2s</span>
+            <div class="step-btn">+</div>
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+        <div class="section-title" style="color:#b0b8c4">AI / A2T</div>
+
+        <div class="row" style="opacity:0.45">
+          <span class="row-icon">👤</span>
+          <span class="row-label">User name</span>
+          <span class="row-val">SunilK ›</span>
+        </div>
+        <div class="row" style="opacity:0.45">
+          <span class="row-icon">🌍</span>
+          <span class="row-label">Time zone</span>
+          <span class="row-val">Asia/Kolkata</span>
+        </div>
+
+      </div>
+    </div>
+
+    
+    <div class="tabbar">
+      <div class="tab"><span class="tab-icon">🎙️</span><span class="tab-label">Record</span></div>
+      <div class="tab"><span class="tab-icon">📋</span><span class="tab-label">Today</span></div>
+      <div class="tab"><span class="tab-icon">📂</span><span class="tab-label">History</span></div>
+      <div class="tab"><span class="tab-icon">👤</span><span class="tab-label">Profile</span></div>
+      <div class="tab active"><span class="tab-icon">⚙️</span><span class="tab-label">Settings</span></div>
+      <div class="tab"><span class="tab-icon">❓</span><span class="tab-label">Help</span></div>
+    </div>
+
+  </div>
+
+  
+  <div class="annotations">
+    <div>
+      <div class="ann-title">Settings — Left Nav Redesign</div>
+      <div class="ann-sub">The content area stays the same. Only the navigation model changes — sections are now chosen from a fixed left pane instead of scrolling past them.</div>
+    </div>
+
+    <div class="ann-card">
+      <div class="ann-card-title">Left nav pane <span class="badge">NEW</span></div>
+      <p>130 px wide, fixed. Each section (Recording, AI/A2T, Appearance, Tasks, Storage, About) is a tappable item with an icon + label. The active item gets a left accent border and blue label.</p>
+    </div>
+
+    <div class="ann-card">
+      <div class="ann-card-title">Content panel</div>
+      <p>Shows only the rows for the selected section — no more scrolling through all groups at once. The section title stays at the top of the panel as a header.</p>
+    </div>
+
+    <div class="ann-card">
+      <div class="ann-card-title">What stays the same</div>
+      <ul>
+        <li>Row card style (icon · label · control)</li>
+        <li>Toggle, stepper, select controls</li>
+        <li>Top header bar with logo</li>
+        <li>Bottom tab bar</li>
+        <li>All existing settings &amp; logic</li>
+      </ul>
+    </div>
+
+    <div class="ann-card">
+      <div class="ann-card-title">Mobile behaviour</div>
+      <p>On narrow screens (&lt; 400 px) the nav labels can be hidden, showing icons only, to keep the content area wide enough to read.</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -11,7 +11,7 @@ import { getExampleDateLabel } from "../lib/SharedHelper.js";
 // One entry = single line. Two or more = line breaks between them.
 const IDLE_MESSAGES = [
   {
-    lines: ["Capture Your Thoughts Before They Disappear.", "Just Speak."],
+    lines: ["Capture Your Thoughts Before They Disappear."],
     hint:  "Speak naturally. Kahija turns your voice into organised activities, instantly.",
   },
   {
@@ -528,17 +528,17 @@ export default function VoiceRecorder({
         {recState === "idle" && (
           <div className={styles.tipsWrap}>
             <div className={styles.earphoneHint}>
-              🎧 For best results, use a headset - totally optional
+              For best results, use a headset 🎧 Totally optional
             </div>
             <button className={styles.tipsToggle} onClick={() => setShowTips((v) => !v)}>
-              {showTips ? "Hide tips" : "More tips"}
+              {showTips ? "Hide tips" : "Tips"}
             </button>
             {showTips && (
               <div className={styles.tipsExpanded}>
-                <div className={styles.tipRow}>🗣️ Speak at a normal volume - avoid mumbling or trailing off.</div>
-                <div className={styles.tipRow}>✋ Avoid tapping or bumping your device while recording.</div>
-                <div className={styles.tipRow}>⏸️ Pause briefly between separate thoughts.</div>
-                <div className={styles.tipRow}>📅 Say specific dates when you can - "{getExampleDateLabel()}" beats "sometime next week."</div>
+                <div className={styles.tipRow}>Speak at a normal volume - avoid mumbling or trailing off.</div>
+                <div className={styles.tipRow}>Avoid tapping or bumping your device while recording.</div>
+                <div className={styles.tipRow}>Pause briefly between separate thoughts.</div>
+                <div className={styles.tipRow}>Say specific dates - "{getExampleDateLabel()}" instead of "sometime next week."</div>
               </div>
             )}
           </div>
