@@ -18,7 +18,7 @@ async function postJson(url, body) {
   return data;
 }
 
-export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) {
+export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB, hasConsent }) {
   const [step,     setStep]     = useState("loading"); // loading | email | otp | done | tampered
   const [legacyKey, setLegacyKey] = useState(null);    // pre-seal key found in the DB, kept (not regenerated) on re-verify
   const [unverifiedNote, setUnverifiedNote] = useState(false); // integrity could not be checked (offline)
@@ -34,6 +34,8 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
   const [cloudClear, setCloudClear] = useState(null); // null | "confirm" | "clearing" | "done" | "error"
   const [cloudMsg,   setCloudMsg]   = useState("");
   const [localClear, setLocalClear] = useState(null); // null | "confirm" | "clearing" | "done" | "error"
+  const [showSignInInfo,  setShowSignInInfo]  = useState(false);
+  const [showKeyInfo,     setShowKeyInfo]     = useState(false);
 
   /* Restore an already-verified profile from the browser DB */
   useEffect(() => {
@@ -280,7 +282,26 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
 
           {step === "email" && (
             <>
-              <div className={styles.cardText}><strong>SIGN IN:</strong> {info}</div>
+              <div className={styles.signInRow}>
+                <span className={styles.signInLabel}>SIGN IN</span>
+                <button
+                  className={styles.signInInfoBtn}
+                  onClick={() => setShowSignInInfo((v) => !v)}
+                  aria-label="About sign in"
+                >
+                  ⓘ
+                </button>
+                {!hasConsent && (
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className={styles.consentNudge}>
+                    Accept Privacy Policy
+                  </a>
+                )}
+              </div>
+              {showSignInInfo && (
+                <div className={styles.signInInfo}>
+                  Create your profile and enable cloud sync. Sign in is only required if you want to sync your data across multiple devices. Once signed in, Kahija keeps your recordings, transcripts and activities in sync — whether you&apos;re at your desk or on the go.
+                </div>
+              )}
               <input
                 type="email"
                 className={styles.textInput}
@@ -295,9 +316,21 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
                 {busy ? "Sending…" : "Send code"}
               </button>
 
-              <div className={styles.cardText} style={{ marginTop: 20 }}>
-                <strong>ALREADY HAVE A KEY?</strong> Restore your profile by uploading the Kahija_Key.txt you downloaded earlier. We will email a code to confirm it is you.
+              <div className={styles.signInRow} style={{ marginTop: 20 }}>
+                <span className={styles.signInLabel}>ALREADY HAVE A KEY?</span>
+                <button
+                  className={styles.signInInfoBtn}
+                  onClick={() => setShowKeyInfo((v) => !v)}
+                  aria-label="About restoring from key"
+                >
+                  ⓘ
+                </button>
               </div>
+              {showKeyInfo && (
+                <div className={styles.signInInfo}>
+                  Restore your profile by uploading the Kahija_Key.txt you downloaded earlier. We will email a code to confirm it is you.
+                </div>
+              )}
               <label className={`${styles.secondaryBtn} ${busy ? styles.secondaryBtnDisabled : ""}`}>
                 Upload Kahija_Key.txt
                 <input
@@ -471,7 +504,18 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB }) 
             )}
           </div>
         )}
+
+        {/* ── Info links ── */}
+        <div className={styles.card} style={{ marginTop: 12 }}>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className={styles.infoLinkRow}>
+            <span className={styles.infoLinkIcon}>🔒</span>
+            <span className={styles.infoLinkLabel}>Privacy Policy and Data Security</span>
+            <span className={styles.infoLinkChevron}>›</span>
+          </a>
+        </div>
+
       </div>
+
     </div>
   );
 }

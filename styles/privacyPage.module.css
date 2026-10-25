@@ -1,0 +1,183 @@
+/* ─── Standalone Privacy Policy page ─────────────────── */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  padding: 0 0 60px;
+}
+
+.inner {
+  width: 100%;
+  max-width: 560px;
+  padding: 0 20px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.version {
+  font-size: 11px;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.backBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex: unset;
+  min-height: unset;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.backBtn:hover { background: rgba(0,0,0,0.06); color: var(--text-main); }
+
+/* ── Intro ── */
+.intro {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+/* ── Group label ── */
+.groupLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ── Section ── */
+.section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.section:last-of-type { border-bottom: none; }
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 5px;
+}
+
+.sectionBody {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+/* ── Collapsible toggle ── */
+.collapseToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 16px 0 0;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  flex: unset;
+  min-height: unset;
+  text-align: left;
+}
+.collapseToggle:hover { opacity: 0.8; }
+
+.chevron { font-size: 11px; color: var(--text-muted); }
+
+/* ── Footer (accept area) ── */
+.footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.accepted {
+  font-size: 14px;
+  font-weight: 600;
+  color: black;
+  padding: 12px 0;
+}
+
+.errorMsg {
+  font-size: 13px;
+  color: #dc2626;
+  margin-bottom: 10px;
+}
+
+.checkRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+
+.checkbox {
+  margin-top: 2px;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.checkLabel {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-main);
+}
+
+.acceptBtn {
+  width: 100%;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: unset;
+  min-height: unset;
+  transition: background 0.15s;
+}
+.acceptBtn:hover:not(:disabled) { background: var(--primary-hover); }
+.acceptBtn:disabled { opacity: 0.4; cursor: not-allowed; }

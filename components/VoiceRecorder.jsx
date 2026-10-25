@@ -45,9 +45,11 @@ export default function VoiceRecorder({
   silenceSec,         // number — seconds of silence before cutting (default 1.5)
   userName,           // string — forwarded to the backend
   userTimezone,       // string — IANA timezone, forwarded to the backend
+  hasConsent,         // boolean — privacy policy accepted
 }) {
   const [recState,         setRecState]         = useState("idle"); // idle | recording | paused
   const [statusText,       setStatusText]        = useState("");
+  const [noConsentMsg,     setNoConsentMsg]      = useState(false); // show consent nudge banner
   const [pauseLabel,       setPauseLabel]        = useState("Pause");
   const [isTextModalOpen,  setIsTextModalOpen]   = useState(false);
   const [textValue,        setTextValue]         = useState("");
@@ -219,6 +221,11 @@ export default function VoiceRecorder({
 
   /* ── Start recording ───────────────────────────── */
   async function startRecording() {
+    if (!hasConsent) {
+      setNoConsentMsg(true);
+      setTimeout(() => setNoConsentMsg(false), 6000);
+      return;
+    }
     try {
       requestWakeLock();
       const transcriber = new ContinuousTranscriber({
@@ -419,8 +426,9 @@ export default function VoiceRecorder({
 
   /* ── Sync statusText with autoA2TStatus from parent ─────────────  */
   useEffect(() => {
-    if (autoA2TStatus === "done")        setStatusText("Done ✓");
-    else if (autoA2TStatus === "error")  setStatusText("Failed — try manually");
+    if (autoA2TStatus === "done")            setStatusText("Done ✓");
+    else if (autoA2TStatus === "error")      setStatusText("Failed — try manually");
+    else if (autoA2TStatus === "no-consent") setStatusText("Accept the Privacy Policy to enable AI processing.");
     else if (autoA2TStatus === null && recState === "idle") setStatusText("");
   }, [autoA2TStatus, recState]);
 
@@ -570,6 +578,17 @@ export default function VoiceRecorder({
           />
         </button>
 
+        {/* No-consent banner — shown when user taps circle without accepting policy */}
+        {noConsentMsg && (
+          <div className={styles.noConsentBanner}>
+            Please{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className={styles.noConsentLink}>
+              accept the Privacy Policy
+            </a>
+            {" "}to enable recording and transcription.
+          </div>
+        )}
+
         {/* Label + hint */}
         <div className={`${styles.circleLabel} ${labelFadeClass}`}>
           {circleLabel !== null ? circleLabel : idleMsg.lines.map((line, i) => (
@@ -599,6 +618,18 @@ export default function VoiceRecorder({
           <button className={styles.learnBtn} onClick={onLearnMore}>
             Learn About Kahija
           </button>
+        )}
+
+        {/* Privacy Policy link — idle only */}
+        {showLearnBtn && (
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${styles.privacyLink} ${hasConsent ? styles.privacyLinkAccepted : styles.privacyLinkPending}`}
+          >
+            {hasConsent ? "Privacy Policy ✓" : "Privacy Policy — please review"}
+          </a>
         )}
 
         {/* Pause pill */}

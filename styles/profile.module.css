@@ -57,6 +57,59 @@
   color: var(--text-muted);
 }
 
+/* ── Sign-in row with info toggle ── */
+.signInRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.signInLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.04em;
+}
+
+.signInInfoBtn {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex: unset;
+  min-height: unset;
+  line-height: 1;
+  border-radius: 4px;
+}
+.signInInfoBtn:hover { color: var(--primary); }
+
+.consentNudge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.consentNudge:hover { background: rgba(2, 132, 199, 0.08); }
+
+.signInInfo {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  background: rgba(2, 132, 199, 0.06);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
 .sectionLabel {
   margin-top: 12px;
   margin-bottom: 4px;
@@ -504,3 +557,34 @@
   cursor: default;
   pointer-events: none;
 }
+
+/* ── Info link rows (Privacy Policy / Data Security) ── */
+.infoLinkRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 11px 0;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  flex: unset;
+  min-height: unset;
+  border-bottom: 1px solid var(--border);
+}
+.infoLinkRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.infoLinkRow:first-child {
+  padding-top: 0;
+}
+.infoLinkRow:hover .infoLinkLabel {
+  color: var(--primary);
+}
+.infoLinkIcon    { font-size: 15px; flex-shrink: 0; }
+.infoLinkLabel   { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-main); }
+.infoLinkChevron { font-size: 16px; color: var(--text-muted); }
