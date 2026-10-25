@@ -114,6 +114,7 @@ function getFormattedDate(timeZone) {
 export default function HistoryList({
   recordings, a2tResults, a2tStatuses, items, dbWarning, userTimezone, userName,
   onDelete, onRename, onSaveA2T, onMarkFailed, onUpdateRecordingText,
+  hasConsent,
 }) {
   const [expandedA2T,    setExpandedA2T]    = useState({});
   const [a2tLoading,     setA2tLoading]     = useState({});
@@ -130,6 +131,11 @@ export default function HistoryList({
   async function transcribeRec(rec) {
     if (rec.kind === "text") {
       setExpandedA2T((p) => ({ ...p, [rec.id]: true }));
+      return;
+    }
+
+    if (!hasConsent) {
+      alert("Please accept the Privacy Policy before using AI transcription.\n\nOpen the Record tab and tap the Privacy Policy link to review and accept.");
       return;
     }
 
@@ -233,6 +239,11 @@ export default function HistoryList({
 
   async function handleReanalyseSubmit() {
     if (!reanalyseRec || !reanalyseText.trim()) return;
+    if (!hasConsent) {
+      setReanalyseState("error");
+      setReanalyseError("Please accept the Privacy Policy before using AI analysis. Open the Record tab and tap the Privacy Policy link.");
+      return;
+    }
     const tz = userTimezone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC");
     const formattedDate = getFormattedDate(tz);
 

@@ -1,16 +1,18 @@
 import Head from "next/head";
 import { useState, useEffect } from "react";
+import { loadConsent } from "../lib/consentStore";
+import { PRIVACY_VERSION } from "../lib/privacyVersion";
 
 import useOrganizerDB from "../hooks/useOrganizerDB";
-import TabBar         from "../components/TabBar";
-import Dashboard      from "../components/Dashboard";
+import TabBar          from "../components/TabBar";
+import Dashboard       from "../components/Dashboard";
 import OnboardingPanel from "../components/OnboardingPanel";
-import VoiceRecorder  from "../components/VoiceRecorder";
-import HistoryList    from "../components/HistoryList";
-import Profile        from "../components/Profile";
+import VoiceRecorder   from "../components/VoiceRecorder";
+import HistoryList     from "../components/HistoryList";
+import Profile         from "../components/Profile";
 import Settings, { LIGHT_COLOR_THEMES } from "../components/Settings";
-import Help           from "../components/Help";
-import pageStyles     from "../styles/page.module.css";
+import Help            from "../components/Help";
+import pageStyles      from "../styles/page.module.css";
 
 const API_URL = "/api/transcribe";
 const TEXT_API_URL = "/api/transcribe-text";
@@ -46,6 +48,7 @@ export default function Home() {
   const [autoA2TStatus,   setAutoA2TStatus]   = useState(null); // null | "processing" | "done" | "error"
   const [showOnboarding,  setShowOnboarding]  = useState(false);
   const [liveTranscript,  setLiveTranscript]  = useState("");   // built up from silence-cut segments
+  const [hasConsent,      setHasConsent]      = useState(false); // privacy policy accepted
 
   const {
     recordings, a2tResults, a2tStatuses, items, settings, dbWarning,
@@ -56,6 +59,22 @@ export default function Home() {
     getSyncSnapshot, mergeSyncData,
     clearLocalDB,
   } = useOrganizerDB();
+
+  // Load consent state once on mount
+  useEffect(() => {
+    loadConsent().then((c) => {
+      setHasConsent(c?.version === PRIVACY_VERSION);
+    }).catch(() => setHasConsent(false));
+  }, []);
+
+  // Re-check consent whenever the page regains focus (user may have accepted on /privacy)
+  useEffect(() => {
+    function onFocus() {
+      loadConsent().then((c) => setHasConsent(c?.version === PRIVACY_VERSION)).catch(() => {});
+    }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   // Apply font and theme color whenever settings change (must be after useOrganizerDB)
   useEffect(() => {
@@ -99,6 +118,13 @@ export default function Home() {
     if (!fullTranscript) {
       setAutoA2TStatus(null);
       setLiveTranscript("");
+      return;
+    }
+
+    // Block backend call if privacy policy not accepted
+    if (!hasConsent) {
+      setAutoA2TStatus("no-consent");
+      setTimeout(() => setAutoA2TStatus(null), 5000);
       return;
     }
 
@@ -151,6 +177,11 @@ export default function Home() {
     };
 
     await addRecording(rec);
+
+    // Block backend call if privacy policy not accepted
+    if (!hasConsent) {
+      throw new Error("Please accept the Privacy Policy before submitting.");
+    }
 
     try {
       const tz = settings?.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -224,6 +255,7 @@ export default function Home() {
               silenceSec={Math.min(settings.silenceSec ?? 2, 5)}
               userName={settings.userName || "SunilK"}
               userTimezone={settings.userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
+              hasConsent={hasConsent}
             />
           )}
           {activeTab === "record" && showOnboarding && (
@@ -247,6 +279,7 @@ export default function Home() {
               onSaveA2T={saveA2TResult}
               onMarkFailed={markA2TFailed}
               onUpdateRecordingText={updateRecordingText}
+              hasConsent={hasConsent}
             />
           )}
           {activeTab === "profile" && (
@@ -257,6 +290,7 @@ export default function Home() {
               onSaveSetting={saveSetting}
               onClearLocalDB={clearLocalDB}
               items={items}
+              hasConsent={hasConsent}
             />
           )}
           {activeTab === "settings" && (
