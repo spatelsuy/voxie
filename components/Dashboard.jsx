@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import OnboardingPanel from "./OnboardingPanel";
+import OnboardingPanel    from "./OnboardingPanel";
+import ExportICSModal     from "./ExportICSModal";
 import styles from "../styles/dashboard.module.css";
 
 const STATUS_COMPLETED  = "completed";
@@ -482,7 +483,7 @@ function ItemCard({ item, onDelete, onStatusChange, onEdit, onViewSource, hasSou
               )}
               {item.sourceSegment && (
                 <div className={styles.detailQuote}>
-                  <div className={styles.quoteLabel}>From audio recording:</div>
+                  <div className={styles.quoteLabel}>User Input:</div>
                   "{item.sourceSegment}"
                 </div>
               )}
@@ -516,7 +517,7 @@ function getMonday(date) {
 /* ─── Calendar Navigation Strip (7-day Monday to Sunday Week) ──── */
 const SHORT_DAYS = ["M", "Tu", "W", "Th", "F", "S", "Su"];
 
-function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelectDate, activityDatesMap, onJumpToday, viewMode, onViewModeChange, searchQuery, onSearchQueryChange }) {
+function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelectDate, activityDatesMap, onJumpToday, viewMode, onViewModeChange, searchQuery, onSearchQueryChange, onExport }) {
   const now = new Date();
   const todayYMD = toYMD(now);
 
@@ -585,6 +586,15 @@ function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelect
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </button>
+        <button
+          type="button"
+          className={styles.exportBtn}
+          onClick={onExport}
+          aria-label="Export activities to calendar"
+          title="Export to calendar (.ics)"
+        >
+          📅
+        </button>
         <button className={styles.todayBtn} onClick={onJumpToday} title="Jump to today">
           Today
         </button>
@@ -652,8 +662,9 @@ function CalendarStrip({ currentWeekMonday, onWeekChange, selectedDate, onSelect
 export default function Dashboard({
   items, a2tResults, onRecordPress, onDeleteItem, onStatusChange, onEditItem, showCompletedItems, scheduleWindow = 7,
 }) {
-  const [editingItem, setEditingItem] = useState(null);
-  const [sourceText,  setSourceText]  = useState(null);
+  const [editingItem,    setEditingItem]    = useState(null);
+  const [sourceText,     setSourceText]     = useState(null);
+  const [showExportICS,  setShowExportICS]  = useState(false);
 
   const todayYMD = toYMD(new Date());
   const [selectedDate, setSelectedDate] = useState(todayYMD);
@@ -821,6 +832,15 @@ export default function Dashboard({
       )}
       {sourceText && <SourceModal sourceText={sourceText} onClose={() => setSourceText(null)} />}
 
+      {/* ICS export modal */}
+      {showExportICS && (
+        <ExportICSModal
+          items={items}
+          onClose={() => setShowExportICS(false)}
+          isSignedIn={false}
+        />
+      )}
+
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -851,6 +871,7 @@ export default function Dashboard({
               onViewModeChange={setViewMode}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
+              onExport={() => setShowExportICS(true)}
             />
 
             {/* Past-due note (if any) */}
@@ -858,7 +879,7 @@ export default function Dashboard({
               <div className={styles.pastDueBanner}>
                 <div className={styles.pastDueHeader}>
                   <span className={styles.pastDueTitle}>
-                    ⚠️ You have {pastDueItems.length} past due {pastDueItems.length === 1 ? "activity" : "activities"}
+                    You have {pastDueItems.length} past due {pastDueItems.length === 1 ? "activity" : "activities"}
                   </span>
                 </div>
               </div>

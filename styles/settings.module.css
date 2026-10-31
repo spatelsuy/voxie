@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 6px;
+  padding: 12px 6px;
   width: 100%;
   background: none;
   border: none;
@@ -54,6 +54,7 @@
   /* override any global button resets */
   min-height: unset;
   flex-shrink: 0;
+  background: rgb(211, 207, 207);
 }
 .navItem:hover {
   background: rgba(0, 0, 0, 0.04);
@@ -64,9 +65,9 @@
 }
 
 .navLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-main);
   line-height: 1.2;
 }
 .navItemActive .navLabel { color: #0284c7; }

@@ -407,8 +407,10 @@ export default function Profile({ onGetSyncData, onMergeSync, onClearLocalDB, ha
 
           {step === "done" && (
             <>
-              <div className={styles.cardTitle}>Verified ✓</div>
-              <div className={styles.cardText}>{email}</div>
+              <div className={styles.cardTitle}>
+                <span className={styles.verified}>Verified</span>{' '}
+                (<span className={styles.cardText}>{email}</span>) ✓
+              </div>
               {unverifiedNote && (
                 <div className={styles.backendNote}>
                   Could not re-check your profile&apos;s integrity (offline?). Downloads are disabled until it can be checked.

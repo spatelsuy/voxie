@@ -18,7 +18,7 @@
 .headerLeft { display: flex; flex-direction: column; }
 .title {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-main);
 }
 .sub {
@@ -36,7 +36,7 @@
 
 .card {
   width: 100%;
-  max-width: 400px;
+  max-width: 800px;
   margin: 0 auto;
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -45,16 +45,16 @@
 }
 
 .cardTitle {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text-main);
 }
 
 .cardText {
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.6;
-  color: var(--text-muted);
+  color: var(--text-main);
 }
 
 /* ── Sign-in row with info toggle ── */
@@ -66,10 +66,10 @@
 }
 
 .signInLabel {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-main);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
 }
 
 .signInInfoBtn {
@@ -89,7 +89,7 @@
 .consentNudge {
   margin-left: auto;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--primary);
   text-decoration: none;
   border: 1px solid var(--primary);
@@ -114,10 +114,10 @@
   margin-top: 12px;
   margin-bottom: 4px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.01em;
+  color: var(--text-main);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -209,8 +209,8 @@
   border-radius: 10px;
   background: #ffffff;
   color: var(--text-main);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   padding: 8px 12px;
   min-height: unset;
   cursor: pointer;
@@ -229,8 +229,8 @@
   border-radius: 10px;
   background: #3b82d4;
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   padding: 8px 12px;
   min-height: unset;
   cursor: pointer;
@@ -390,7 +390,7 @@
 
 .modalTitle {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-main);
 }
 
@@ -461,7 +461,7 @@
   text-align: center;
   letter-spacing: 0.4em;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .primaryBtn {
@@ -472,7 +472,7 @@
   background: #3b82d4;
   color: #ffffff;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 9px 12px;
   min-height: unset;
   cursor: pointer;
@@ -544,7 +544,7 @@
   background: #eff6ff;
   color: #1d4ed8;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 9px 12px;
   text-align: center;
   cursor: pointer;
