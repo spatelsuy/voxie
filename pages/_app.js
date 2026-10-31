@@ -31,6 +31,16 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
         {/* ── MS Tiles (Windows / Edge) ── */}
         <meta name="msapplication-TileImage" content="/K_Logo.png" />
         <meta name="msapplication-TileColor" content="#0284c7" />
+        {/* ── Link previews (WhatsApp, Telegram, Slack, etc.) ── */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Kahija" />
+        <meta property="og:title" content="Kahija" />
+        <meta property="og:description" content="Voice recorder and organizer" />
+        <meta property="og:url" content="https://kahija.spbasic.com/" />
+        <meta property="og:image" content="https://kahija.spbasic.com/K_Icon-192.png" />
+        <meta property="og:image:width" content="192" />
+        <meta property="og:image:height" content="192" />
+        <meta name="twitter:card" content="summary" />
       </Head>
       <Component {...pageProps} />
     </SessionProvider>

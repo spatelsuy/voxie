@@ -21,6 +21,7 @@
 
 import { useMemo, useState } from "react";
 import { classifyItems, buildICS, downloadICS } from "../lib/buildICS";
+import { loadProfile, keyFingerprint } from "../lib/profileStore";
 import styles from "../styles/exportICS.module.css";
 
 function formatDate(date, allDay) {
@@ -43,6 +44,12 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
   const [downloaded,  setDownloaded]  = useState(false);
   const [pushState,   setPushState]   = useState(null);  // null | "pushing" | "done" | "error"
   const [pushMsg,     setPushMsg]     = useState("");
+  const [emailState,  setEmailState]  = useState(null);  // null | "sending" | "done" | "error"
+  const [emailMsg,    setEmailMsg]    = useState("");
+  const [showEmail,   setShowEmail]   = useState(false);
+  const [profileEmail, setProfileEmail] = useState(null);
+  const [includeSelf, setIncludeSelf] = useState(true);
+  const [otherEmails, setOtherEmails] = useState("");
 
   const { included, needsFix, excluded } = useMemo(() => classifyItems(items || []), [items]);
 
@@ -82,6 +89,62 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
     downloadICS(ics);
     setDownloaded(true);
     setTimeout(() => setDownloaded(false), 3000);
+  }
+
+  async function toggleEmailPanel() {
+    const next = !showEmail;
+    setShowEmail(next);
+    if (next && profileEmail === null) {
+      try {
+        const { email } = await loadProfile();
+        setProfileEmail(email || "");
+      } catch {
+        setProfileEmail("");
+      }
+    }
+  }
+
+  async function handleEmail() {
+    const toExport = included.filter((e) => selected.has(e.item.id));
+    if (toExport.length === 0) return;
+
+    const to = otherEmails.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+    if (!includeSelf && to.length === 0) {
+      setEmailState("error");
+      setEmailMsg("Enter at least one recipient.");
+      return;
+    }
+
+    setEmailState("sending");
+    setEmailMsg("");
+    try {
+      const { email, cryptoKey, seal } = await loadProfile();
+      if (!email || !cryptoKey || !seal) {
+        throw new Error("Verify your email in Profile first.");
+      }
+      const res = await fetch("/api/export/email-ics", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          email,
+          keyHash: await keyFingerprint(cryptoKey),
+          seal,
+          ics:     buildICS(toExport),
+          count:   toExport.length,
+          includeSelf,
+          to,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `Failed (${res.status})`);
+      setEmailState("done");
+      setEmailMsg(`Sent to ${(body.sentTo || []).join(", ")}`);
+    } catch (err) {
+      console.error("[export] email ICS failed:", err);
+      setEmailState("error");
+      setEmailMsg(err.message);
+    }
+    setTimeout(() => { setEmailState(null); setEmailMsg(""); }, 5000);
   }
 
   async function handlePushToGoogle() {
@@ -138,7 +201,10 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
             checked={selected.has(item.id)}
             onChange={() => toggleItem(item.id)}
           />
-          <span className={styles.rowTitle}>{item.title}</span>
+          <span className={styles.rowTitle}>
+            {item.title}
+            {item.recurrence?.is_recurring === true && <span className={styles.rowRecurring}> (recurring)</span>}
+          </span>
         </label>
         <span className={styles.rowDate}>{formatDate(date, allDay)}</span>
       </li>
@@ -157,8 +223,8 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
         {/* Header */}
         <div className={styles.header}>
           <div>
-            <div className={styles.title}>Export to Calendar</div>
-            <div className={styles.sub}>Select items to download as an .ics file</div>
+            <div className={styles.title}>Export Activities</div>
+            <div className={styles.sub}>Downloads as .ics — imports into Outlook / Apple Calendar / Google Calendar</div>
           </div>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -221,7 +287,7 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
                 <span className={styles.sectionCount}>{allDay.length}</span>
               </div>
               <div className={styles.sectionNote}>
-                These activities have no time. They will appear as all-day to-dos on the date they were recorded. To add a specific time, edit them in Inbox first.
+                These activities have no time. They will appear as all-day events on the date they were recorded. To add a specific time, edit them in Inbox first.
               </div>
               <ul className={styles.list}>{renderRows(allDay)}</ul>
             </section>
@@ -242,7 +308,10 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
                 {needsFix.map(({ item }) => (
                   <li key={item.id} className={`${styles.row} ${styles.rowWarn} ${styles.rowDisabled}`}>
                     <span className={styles.rowCheckPlaceholder} />
-                    <span className={styles.rowTitle}>{item.title}</span>
+                    <span className={styles.rowTitle}>
+                      {item.title}
+                      {item.recurrence?.is_recurring === true && <span className={styles.rowRecurring}> (recurring)</span>}
+                    </span>
                     <span className={styles.rowTime}>{item.time}</span>
                   </li>
                 ))}
@@ -272,7 +341,48 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
           </div>
         </div>
 
+        {/* Email panel */}
+        {showEmail && (
+          <div className={styles.emailPanel}>
+            <label className={styles.emailSelf}>
+              <input
+                type="checkbox"
+                className={styles.rowCheck}
+                checked={includeSelf}
+                onChange={(e) => setIncludeSelf(e.target.checked)}
+              />
+              <span>
+                Send to my registered email
+                {profileEmail ? <strong> ({profileEmail})</strong> : null}
+              </span>
+            </label>
+            {profileEmail === "" && (
+              <div className={styles.emailMsgError}>No verified email found — verify your email in Profile first.</div>
+            )}
+            <input
+              type="text"
+              className={styles.emailInput}
+              placeholder="Other emails (comma separated, max 5 total)"
+              value={otherEmails}
+              onChange={(e) => setOtherEmails(e.target.value)}
+              autoComplete="off"
+            />
+            <button
+              className={`${styles.downloadBtn} ${emailState === "done" ? styles.downloadBtnDone : ""}`}
+              onClick={handleEmail}
+              disabled={selectedCount === 0 || emailState === "sending"}
+            >
+              {emailState === "sending" ? "Sending…" : emailState === "done" ? "Sent ✓" : `Send (${selectedCount})`}
+            </button>
+          </div>
+        )}
+
         {/* Actions */}
+        {emailMsg && (
+          <div className={`${styles.emailMsg} ${emailState === "error" ? styles.emailMsgError : ""}`}>
+            {emailMsg}
+          </div>
+        )}
         <div className={styles.actions}>
           <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
           <button
@@ -281,6 +391,13 @@ export default function ExportICSModal({ items, onClose, isSignedIn }) {
             disabled={selectedCount === 0}
           >
             {downloaded ? "Downloaded ✓" : `Download .ics (${selectedCount})`}
+          </button>
+          <button
+            className={styles.emailBtn}
+            onClick={toggleEmailPanel}
+            disabled={selectedCount === 0}
+          >
+            {showEmail ? "Hide email" : "Email…"}
           </button>
           {/* Push to Google button hidden for now */}
         </div>

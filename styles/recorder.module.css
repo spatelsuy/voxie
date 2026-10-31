@@ -310,10 +310,10 @@
 .privacyLink:hover { opacity: 0.7; }
 
 .privacyLinkPending {
-  color: rgba(255, 200, 100, 0.85);   /* warm amber nudge — noticeable but not alarming */
+  color: black;
 }
 .privacyLinkAccepted {
-  color: black;    /* muted green — confirmed, low-key */
+  color: black;
 }
 
 /* ── No-consent banner ── */

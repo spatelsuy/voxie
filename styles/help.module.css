@@ -36,7 +36,7 @@
 /* scrollable body — sits below the fixed header */
 .scrollBody {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto;  
 }
 
 /* body — technical reference below the FAQ accordion */
