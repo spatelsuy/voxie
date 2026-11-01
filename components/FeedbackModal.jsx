@@ -40,7 +40,7 @@ export default function FeedbackModal({ onClose }) {
       onClick={onClose}
       style={{
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 300,
-        display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 1,
       }}
     >
       <div
@@ -60,7 +60,11 @@ export default function FeedbackModal({ onClose }) {
           <button
             onClick={onClose}
             aria-label="Close"
-            style={{ border: "none", background: "#f1f5f9", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: COLORS.mist }}
+            style={{
+              flex: "none", width: 32, height: 32, minHeight: "unset", padding: 0,
+              border: "none", background: "#f1f5f9", borderRadius: 8, cursor: "pointer",
+              color: COLORS.mist, fontSize: 14, lineHeight: 1,
+            }}
           >
             ✕
           </button>

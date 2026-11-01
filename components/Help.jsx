@@ -126,7 +126,21 @@ export default function Help() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.title}>Help</div>
-          <div className={styles.sub}>Videos &amp; frequently asked questions</div>
+          <div className={styles.sub}>
+            Videos &amp; frequently asked questions. Have a question?{" "}
+            <button
+              type="button"
+              onClick={() => setShowContact(true)}
+              style={{
+                flex: "none", display: "inline", fontFamily: "inherit", fontSize: "inherit", fontWeight: 700, color: "inherit",
+                textDecoration: "underline", cursor: "pointer", background: "none", border: "none",
+                padding: 0, minHeight: "unset",
+              }}
+            >
+              Contact us
+            </button>
+            .
+          </div>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/K_Logo.png" alt="Kahija" className={styles.headerLogo} />
@@ -239,23 +253,6 @@ export default function Help() {
                 />
               );
             })}
-          </div>
-
-          {/* Footer */}
-          <div style={{ marginTop: 40, textAlign: "center" }}>
-            <span style={{ fontFamily: "var(--app-font)", fontSize: 13.5, color: COLORS.faint }}>
-              Still have questions?{" "}
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowContact(true)}
-              style={{
-                fontFamily: "var(--app-font)", fontSize: 13.5, color: COLORS.amber, fontWeight: 600,
-                cursor: "pointer", background: "none", border: "none", padding: 0, minHeight: "unset",
-              }}
-            >
-              Contact us
-            </button>
           </div>
 
         </div>
