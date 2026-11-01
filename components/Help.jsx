@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styles from "../styles/help.module.css";
+import FeedbackModal from "./FeedbackModal";
 
 const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Sora:wght@400;500;600;700&display=swap');
@@ -111,6 +112,7 @@ const FIRST_VIDEO_ID = "kNzvPxKW4Qs";
 
 export default function Help() {
   const [openIndex, setOpenIndex] = useState(0);
+  const [showContact, setShowContact] = useState(false);
 
   // Count only item rows to map openIndex correctly
   let itemCounter = -1;
@@ -118,6 +120,7 @@ export default function Help() {
   return (
     <div className={styles.wrap}>
       <style>{FONT_IMPORT}</style>
+      {showContact && <FeedbackModal onClose={() => setShowContact(false)} />}
 
       {/* ── Header — matches Profile / Settings ── */}
       <div className={styles.header}>
@@ -243,9 +246,16 @@ export default function Help() {
             <span style={{ fontFamily: "var(--app-font)", fontSize: 13.5, color: COLORS.faint }}>
               Still have questions?{" "}
             </span>
-            <span style={{ fontFamily: "var(--app-font)", fontSize: 13.5, color: COLORS.amber, fontWeight: 600, cursor: "pointer" }}>
+            <button
+              type="button"
+              onClick={() => setShowContact(true)}
+              style={{
+                fontFamily: "var(--app-font)", fontSize: 13.5, color: COLORS.amber, fontWeight: 600,
+                cursor: "pointer", background: "none", border: "none", padding: 0, minHeight: "unset",
+              }}
+            >
               Contact us
-            </span>
+            </button>
           </div>
 
         </div>
