@@ -23,6 +23,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
         <meta name="theme-color" content="#0284c7" />
 
         {/* ── iOS Safari PWA ── */}
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Kahija" />
@@ -35,7 +36,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Kahija" />
         <meta property="og:title" content="Kahija" />
-        <meta property="og:description" content="Voice recorder and organizer" />
+        <meta property="og:description" content="Just speak. Kahija turns your voice into organised activities and notes." />
         <meta property="og:url" content="https://kahija.spbasic.com/" />
         <meta property="og:image" content="https://kahija.spbasic.com/K_Icon-192.png" />
         <meta property="og:image:width" content="192" />

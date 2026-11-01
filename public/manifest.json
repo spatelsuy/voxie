@@ -1,7 +1,7 @@
 {
   "name": "Kahija",
   "short_name": "Kahija",
-  "description": "Voice recorder and organizer",
+  "description": "Just speak. Kahija turns your voice into organised activities and notes.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
